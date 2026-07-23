@@ -16,6 +16,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
   if (!isOpen) return null;
 
   const tools = [
+    // Media & Audio/Video
     { 
       id: 'transcribe_audio', 
       name: 'Standard Transcription', 
@@ -36,8 +37,32 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
     },
     { id: 'download_video', name: 'Web Video Downloader', category: 'Media', icon: Video, desc: 'Download videos from YouTube, TikTok, IG, X' },
     { id: 'extract_audio_from_video', name: 'Extract Audio (MP3)', category: 'Media', icon: FileAudio, desc: 'Pull MP3 track from any MP4/MOV video' },
-    // Add any other tools you need here
+    
+    // Presentations (.pptx)
+    { id: 'docx_to_pptx', name: 'Word Document to PPTX', category: 'Presentations', icon: Presentation, desc: 'Convert Word docs into themed slide decks' },
+    { id: 'pdf_to_pptx', name: 'PDF to PPTX Presentation', category: 'Presentations', icon: Presentation, desc: 'Turn PDF pages into PowerPoint slides' },
+    { id: 'pptx_to_docx', name: 'PPTX Presentation to Word', category: 'Presentations', icon: FileText, desc: 'Extract slides and images into a Word doc' },
+    
+    // Documents & PDFs
+    { id: 'pdf_to_docx', name: 'PDF to Word Document', category: 'Documents', icon: FileText, desc: 'Convert PDF files into editable .docx' },
+    { id: 'docx_to_pdf', name: 'Word Document to PDF', category: 'Documents', icon: FileText, desc: 'Render Word documents directly to PDF' },
+    { id: 'extract_pdf_text', name: 'Extract Text from PDF', category: 'Documents', icon: FileText, desc: 'Dump all text content from a PDF file' },
+    { id: 'pdf_to_images', name: 'PDF Pages to PNG Zip', category: 'Documents', icon: FileArchive, desc: 'Convert every PDF page to PNG images' },
+    
+    // Spreadsheets
+    { id: 'csv_to_xlsx', name: 'CSV to Excel (.xlsx)', category: 'Spreadsheets', icon: Table, desc: 'Convert raw CSV into formatted Excel' },
+    { id: 'xlsx_to_csv', name: 'Excel (.xlsx) to CSV', category: 'Spreadsheets', icon: Table, desc: 'Export active sheet from Excel to CSV' },
+    
+    // Images
+    { id: 'convert_image', name: 'Image Format Converter', category: 'Images', icon: ImageIcon, desc: 'Convert between PNG, JPG, WEBP, TIFF' },
+    { id: 'grayscale_image', name: 'Grayscale Image', category: 'Images', icon: ImageIcon, desc: 'Apply monochrome filter to an image' },
   ];
+
+  const categories = ['All', 'Presentations', 'Documents', 'Media', 'Spreadsheets', 'Images'];
+
+  const filteredTools = activeCategory === 'All' 
+    ? tools 
+    : tools.filter(t => t.category === activeCategory);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -82,11 +107,30 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
           </button>
         </div>
 
+        {/* Category Tabs */}
+        {!selectedTool && (
+          <div className="flex items-center gap-2 px-6 pt-4 overflow-x-auto pb-2 border-b border-slate-800/50">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                  activeCategory === cat 
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/20' 
+                    : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6 flex-1">
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
           {!selectedTool ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {tools.map((t) => {
+              {filteredTools.map((t) => {
                 const Icon = t.icon;
                 return (
                   <button
@@ -182,6 +226,43 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                     <option value="small">Small (Higher Detail)</option>
                     <option value="medium">Medium (High Accuracy)</option>
                     <option value="large-v3">Large-v3 (Maximum Accuracy - Slowest)</option>
+                  </select>
+                </div>
+              )}
+
+              {/* PPTX Theme Option */}
+              {(selectedTool === 'docx_to_pptx' || selectedTool === 'pdf_to_pptx') && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
+                    <Palette size={14} className="text-cyan-400" /> Presentation Color Theme
+                  </label>
+                  <select
+                    value={theme}
+                    onChange={(e) => setTheme(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-200 outline-none focus:ring-2 focus:ring-cyan-500"
+                  >
+                    <option value="Ocean Blue">Ocean Blue (Professional Dark Blue)</option>
+                    <option value="Sunset Orange">Sunset Orange (Warm Dark)</option>
+                    <option value="Forest Green">Forest Green (Deep Emerald)</option>
+                    <option value="Monochrome">Monochrome (Modern Dark)</option>
+                    <option value="Soft Light">Soft Light (Clean Cream)</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Image Format Option */}
+              {selectedTool === 'convert_image' && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Target Image Format</label>
+                  <select
+                    value={imageFormat}
+                    onChange={(e) => setImageFormat(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-200 outline-none focus:ring-2 focus:ring-cyan-500"
+                  >
+                    <option value="png">PNG (Lossless)</option>
+                    <option value="jpg">JPG (Compressed)</option>
+                    <option value="webp">WEBP (Web Optimized)</option>
+                    <option value="tiff">TIFF (High Quality)</option>
                   </select>
                 </div>
               )}
