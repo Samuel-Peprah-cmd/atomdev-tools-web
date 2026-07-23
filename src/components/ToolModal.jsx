@@ -16,7 +16,24 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
 
   const tools = [
     // Media & Audio/Video
-    { id: 'transcribe_with_speakers', name: 'Speaker Diarization', category: 'Media', icon: FileAudio, desc: 'Transcribe audio/video with speaker labeling' },
+    { 
+      id: 'transcribe_audio', 
+      name: 'Standard Transcription', 
+      category: 'Media', 
+      icon: FileAudio, 
+      desc: 'Quickly extract text from audio/video without speaker labels',
+      tag: '⚡ Fast',
+      tagColor: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
+    },
+    { 
+      id: 'transcribe_with_speakers', 
+      name: 'Speaker Diarization', 
+      category: 'Media', 
+      icon: FileAudio, 
+      desc: 'Transcribe audio/video with detailed speaker annotations',
+      tag: '⏱️ High Accuracy (Slower)',
+      tagColor: 'text-amber-400 bg-amber-400/10 border-amber-400/20'
+    },
     { id: 'download_video', name: 'Web Video Downloader', category: 'Media', icon: Video, desc: 'Download videos from YouTube, TikTok, IG, X' },
     { id: 'extract_audio_from_video', name: 'Extract Audio (MP3)', category: 'Media', icon: FileAudio, desc: 'Pull MP3 track from any MP4/MOV video' },
 
@@ -116,13 +133,20 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                     key={t.id}
                     type="button"
                     onClick={() => setSelectedTool(t.id)}
-                    className="flex flex-col text-left p-4 rounded-2xl border border-slate-800 bg-slate-800/30 hover:bg-slate-800/80 hover:border-cyan-500/50 transition-all duration-300 group"
+                    className="relative flex flex-col text-left p-4 rounded-2xl border border-slate-800 bg-slate-800/30 hover:bg-slate-800/80 hover:border-cyan-500/50 transition-all duration-300 group"
                   >
+                    {/* Info Tag Badge */}
+                    {t.tag && (
+                      <span className={`absolute top-4 right-4 px-2 py-0.5 rounded-full text-[10px] font-bold border ${t.tagColor}`}>
+                        {t.tag}
+                      </span>
+                    )}
+
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-cyan-500/30 text-cyan-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                       <Icon size={20} />
                     </div>
                     <span className="font-semibold text-slate-200 text-sm mb-1">{t.name}</span>
-                    <span className="text-xs text-slate-400">{t.desc}</span>
+                    <span className="text-xs text-slate-400 pr-12">{t.desc}</span> {/* Added pr-12 to prevent text overlapping the badge */}
                   </button>
                 );
               })}
@@ -142,7 +166,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
               </h3>
 
               {/* URL Input */}
-              {(selectedTool === 'download_video' || selectedTool === 'transcribe_with_speakers') && (
+              {(selectedTool === 'download_video' || selectedTool === 'transcribe_with_speakers' || selectedTool === 'transcribe_audio') && (
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1.5">Web URL (YouTube, TikTok, IG, X)</label>
                   <input
