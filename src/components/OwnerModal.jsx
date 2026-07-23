@@ -1,8 +1,5 @@
 import React from 'react';
-import { 
-  X, Code, BookOpen, ShieldCheck, CheckCircle2, 
-  Terminal, Briefcase, ExternalLink, Quote 
-} from 'lucide-react';
+import { X, Code, BookOpen, ShieldCheck, CheckCircle2, Terminal, Briefcase, ExternalLink, Quote, User } from 'lucide-react';
 
 export default function OwnerModal({ isOpen, onClose }) {
   if (!isOpen) return null;
