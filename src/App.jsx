@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Paperclip, Send, Sparkles, Download, Loader2, CheckCircle2, AlertCircle, MessageSquare, Menu, Moon, Sun, StickyNote, User, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Paperclip, Send, Sparkles, Download, Loader2, CheckCircle2, AlertCircle, MessageSquare, Menu, Moon, Sun, StickyNote, User, Pencil, Trash2, Clock } from 'lucide-react';
 import { submitJob, pollJobStatus } from './api/client';
 import ToolModal from './components/ToolModal';
 import OwnerModal from './components/OwnerModal';
@@ -9,8 +9,8 @@ const ProcessingStage = () => {
   const stages = [
     "Uploading data securely...",
     "Initializing AtomDev ML engines...",
-    "Processing media (this may take a minute)...",
-    "Running heavy algorithms...",
+    "Processing media in background...",
+    "Running heavy AI algorithms...",
     "Packaging final results..."
   ];
 
@@ -22,9 +22,15 @@ const ProcessingStage = () => {
   }, []);
 
   return (
-    <div className="flex items-center gap-3 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-xl text-sm font-medium">
-      <Loader2 size={18} className="animate-spin shrink-0" />
-      <span className="animate-pulse">{stages[stageIndex]}</span>
+    <div className="flex flex-col gap-2 bg-indigo-50 dark:bg-indigo-900/30 p-3.5 rounded-xl border border-indigo-500/20 text-sm">
+      <div className="flex items-center gap-3 text-indigo-600 dark:text-indigo-400 font-medium">
+        <Loader2 size={18} className="animate-spin shrink-0" />
+        <span className="animate-pulse">{stages[stageIndex]}</span>
+      </div>
+      <div className="flex items-center gap-1.5 text-[11px] text-indigo-700/80 dark:text-indigo-300/80 pt-1 border-t border-indigo-500/10">
+        <Clock size={13} className="shrink-0" />
+        <span>Safe to close tab. Task runs securely on server worker.</span>
+      </div>
     </div>
   );
 };
@@ -282,7 +288,7 @@ export default function App() {
                 </div>
               </button>
               <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center tracking-wide">
-                AtomDev Tools v0.8.2
+                AtomDev Tools v0.8.6
               </p>
             </div>
 
@@ -320,7 +326,7 @@ export default function App() {
                   </div>
                   <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-2">AtomDev Production</h1>
                   <p className="text-gray-500 dark:text-gray-400 text-sm max-w-md">
-                    Paste a URL to auto-download, type a note to save it, or click the paperclip for heavy document tools.
+                    Paste a URL to auto-download, type a note to save it, or click the paperclip for heavy transcription & document tools.
                   </p>
                 </div>
               )}
@@ -337,7 +343,7 @@ export default function App() {
                   {msg.type === 'job_status' ? (
                     <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 w-full max-w-md shadow-sm">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="font-semibold text-sm text-gray-800 dark:text-gray-200">{msg.tool}</span>
+                        <span className="font-semibold text-sm text-gray-800 dark:text-gray-200 capitalize">{msg.tool.replace(/_/g, ' ')}</span>
                         <span className="text-xs capitalize font-medium text-gray-500 dark:text-gray-400">{msg.status}</span>
                       </div>
 
