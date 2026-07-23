@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Paperclip, Send, Sparkles, Download, Loader2, CheckCircle2, AlertCircle, MessageSquare, Menu, Moon, Sun, StickyNote, User, Pencil, Trash2 } from 'lucide-react';
 import { submitJob, pollJobStatus } from './api/client';
 import ToolModal from './components/ToolModal';
+import OwnerModal from './components/OwnerModal';
 
 const ProcessingStage = () => {
   const [stageIndex, setStageIndex] = useState(0);
@@ -37,9 +38,9 @@ export default function App() {
   const [activeSessionId, setActiveSessionId] = useState(sessions[0]?.id);
   const [inputText, setInputText] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
-  // --- SESSION EDITING STATE ---
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   
@@ -75,7 +76,6 @@ export default function App() {
       if (session.id === activeSessionId) {
         const newMessages = typeof updater === 'function' ? updater(session.messages) : updater;
         let title = session.title;
-        // Auto-name the session if it's currently default and gets its first message
         if (session.messages.length === 0 && newMessages.length > 0 && session.title === 'New Workspace') {
            title = newMessages[0].content.substring(0, 25) + "...";
         }
@@ -91,18 +91,15 @@ export default function App() {
     setActiveSessionId(newSession.id);
   };
 
-  // --- SESSION MANAGEMENT FUNCTIONS ---
   const deleteSession = (e, id) => {
     e.stopPropagation();
     const updatedSessions = sessions.filter(s => s.id !== id);
     if (updatedSessions.length === 0) {
-      // If we deleted the last session, create a new blank one
       const newSession = { id: Date.now().toString(), title: 'New Workspace', messages: [] };
       setSessions([newSession]);
       setActiveSessionId(newSession.id);
     } else {
       setSessions(updatedSessions);
-      // If we deleted the active session, switch to the newest available one
       if (activeSessionId === id) {
         setActiveSessionId(updatedSessions[0].id);
       }
@@ -214,7 +211,6 @@ export default function App() {
               </button>
             </div>
             
-            {/* The min-h-0 class is crucial here to fix scroll boundaries in Tailwind flex columns */}
             <div className="flex-1 overflow-y-auto min-h-0 mt-2 space-y-1 px-3 custom-scrollbar">
               <p className="text-xs font-bold tracking-wider text-gray-400 dark:text-gray-500 px-1 mb-3 uppercase">Workspace History</p>
               
@@ -249,7 +245,6 @@ export default function App() {
                         <span className="truncate">{session.title}</span>
                       </button>
                       
-                      {/* Edit and Delete Actions - Visible on hover */}
                       <div className="hidden group-hover:flex items-center gap-1.5 shrink-0 ml-2">
                         <button 
                           onClick={(e) => startEditing(e, session)} 
@@ -272,17 +267,20 @@ export default function App() {
               ))}
             </div>
 
+            {/* CLICKABLE OWNER MODAL TRIGGER */}
             <div className="px-3 mt-auto pt-4 pb-2 border-t border-gray-300 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 shrink-0">
-              <p className="text-xs font-bold tracking-wider text-gray-400 dark:text-gray-500 mb-2 uppercase px-1">About Me</p>
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-xl shadow-sm mb-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <User size={14} className="text-indigo-500" />
-                  <p className="font-semibold text-sm text-gray-800 dark:text-gray-200 leading-none">Atom De Legend</p>
+              <button 
+                onClick={() => setIsOwnerModalOpen(true)}
+                className="w-full flex items-center gap-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 p-2.5 rounded-xl shadow-sm mb-3 transition-colors text-left group"
+              >
+                <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-800/50 transition-colors">
+                  <User size={16} className="text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
-                  Freelance Web Developer & Level 400 Occupational Therapy Student.
-                </p>
-              </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-sm text-gray-800 dark:text-gray-200 truncate">About Me</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">View Profile & Info</p>
+                </div>
+              </button>
               <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center tracking-wide">
                 AtomDev Tools v0.8.2
               </p>
@@ -430,6 +428,12 @@ export default function App() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmitJob={handleToolSubmit}
+      />
+      
+      {/* OWNER MODAL */}
+      <OwnerModal 
+        isOpen={isOwnerModalOpen} 
+        onClose={() => setIsOwnerModalOpen(false)} 
       />
     </div>
   );
