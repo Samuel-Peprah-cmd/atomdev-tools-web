@@ -172,15 +172,21 @@ export default function App() {
     }
   };
 
-  const handleToolSubmit = async ({ tool, file, url, options }) => {
+  const handleToolSubmit = async ({ tool, file, files, url, options }) => {
     const userMsgId = Date.now().toString();
     const jobMsgId = (Date.now() + 1).toString();
+
+    // Dynamically format the chat message based on input type
+    let contentStr = '';
+    if (files && files.length > 0) contentStr = `[Files]: ${files.length} documents -> ${tool}`;
+    else if (file) contentStr = `[File]: ${file.name} -> ${tool}`;
+    else contentStr = `[URL]: ${url} -> ${tool}`;
 
     const userMessage = {
       id: userMsgId,
       role: 'user',
       type: 'command',
-      content: file ? `[File]: ${file.name} -> ${tool}` : `[URL]: ${url} -> ${tool}`,
+      content: contentStr,
     };
 
     const initialJobMessage = {
@@ -196,9 +202,11 @@ export default function App() {
     updateMessages((prev) => [...prev, userMessage, initialJobMessage]);
 
     try {
-      const { job_id } = await submitJob({ tool, file, url, options });
+      // Pass the new files array to your API client
+      const { job_id } = await submitJob({ tool, file, files, url, options });
 
       await pollJobStatus(job_id, (statusUpdate) => {
+        // ... (keep the rest of your pollJobStatus logic the exact same)
         updateMessages((prev) =>
           prev.map((msg) =>
             msg.id === jobMsgId

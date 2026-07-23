@@ -8,6 +8,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
   const [selectedTool, setSelectedTool] = useState(null);
   const [activeCategory, setActiveCategory] = useState('All');
   const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]); // State for multiple file uploads
   const [url, setUrl] = useState('');
   const [theme, setTheme] = useState('Ocean Blue');
   const [imageFormat, setImageFormat] = useState('png');
@@ -48,6 +49,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
     { id: 'docx_to_pdf', name: 'Word Document to PDF', category: 'Documents', icon: FileText, desc: 'Render Word documents directly to PDF' },
     { id: 'extract_pdf_text', name: 'Extract Text from PDF', category: 'Documents', icon: FileText, desc: 'Dump all text content from a PDF file' },
     { id: 'pdf_to_images', name: 'PDF Pages to PNG Zip', category: 'Documents', icon: FileArchive, desc: 'Convert every PDF page to PNG images' },
+    { id: 'merge_pdfs', name: 'Merge Multiple PDFs', category: 'Documents', icon: FileArchive, desc: 'Combine multiple PDF files into a single document' },
     
     // Spreadsheets
     { id: 'csv_to_xlsx', name: 'CSV to Excel (.xlsx)', category: 'Spreadsheets', icon: Table, desc: 'Convert raw CSV into formatted Excel' },
@@ -81,13 +83,15 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
 
     onSubmitJob({
       tool: selectedTool,
-      file,
+      file: selectedTool === 'merge_pdfs' ? null : file,
+      files: selectedTool === 'merge_pdfs' ? files : null,
       url,
       options
     });
 
     setSelectedTool(null);
     setFile(null);
+    setFiles([]);
     setUrl('');
     setModelSize('base');
     onClose();
@@ -192,18 +196,30 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                 </div>
               )}
 
-              {/* File Upload */}
+              {/* File Upload (Dynamically toggles for multiple files if merge_pdfs is selected) */}
               {selectedTool !== 'download_video' && (
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Upload Source File</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                    {selectedTool === 'merge_pdfs' ? 'Upload PDF Files (Select Multiple)' : 'Upload Source File'}
+                  </label>
                   <div className="border-2 border-dashed border-slate-700 hover:border-cyan-500/50 bg-slate-800/30 rounded-2xl p-6 text-center transition-colors relative">
                     <Upload className="mx-auto text-cyan-400 mb-2" size={28} />
                     <span className="text-xs text-slate-300 block font-medium">
-                      {file ? file.name : 'Click or drop your file here'}
+                      {selectedTool === 'merge_pdfs'
+                        ? (files && files.length > 0 ? `${files.length} files selected` : 'Click or drop multiple PDFs here')
+                        : (file ? file.name : 'Click or drop your file here')}
                     </span>
                     <input
                       type="file"
-                      onChange={(e) => setFile(e.target.files[0])}
+                      multiple={selectedTool === 'merge_pdfs'}
+                      accept={selectedTool === 'merge_pdfs' ? '.pdf' : '*/*'}
+                      onChange={(e) => {
+                        if (selectedTool === 'merge_pdfs') {
+                          setFiles(Array.from(e.target.files));
+                        } else {
+                          setFile(e.target.files[0]);
+                        }
+                      }}
                       className="absolute inset-0 opacity-0 cursor-pointer"
                     />
                   </div>
