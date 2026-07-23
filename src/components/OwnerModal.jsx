@@ -13,8 +13,9 @@ export default function OwnerModal({ isOpen, onClose }) {
   ];
 
   const technologies = [
-    "Python", "Flask", "JavaScript", "HTML", "CSS", "Tailwind CSS", 
-    "Bootstrap", "PostgreSQL", "SQLite", "Git", "GitHub", "Cloudflare", "Docker"
+    "React", "Vite", "JavaScript", "Tailwind CSS", "HTML", "CSS", 
+    "Python", "Flask", "PostgreSQL", "SQLite", "Git", "GitHub", 
+    "Cloudflare", "Docker", "Vercel", "Lucide React"
   ];
 
   const socialLinks = [
