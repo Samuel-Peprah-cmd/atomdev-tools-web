@@ -148,6 +148,30 @@ export default function App() {
     setInputText('');
   };
 
+  // --- NEW: FORCE DOWNLOAD HANDLER ---
+  const handleForceDownload = async (url, filename) => {
+    try {
+      // Fetch the file in the background as a blob to prevent browser rendering
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Network response failed');
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Programmatically trigger a hidden anchor click
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename || 'AtomDev_Output';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (e) {
+      // Fallback: If CORS blocks the fetch, open normally
+      console.warn("Blob download failed (CORS), falling back to new tab:", e);
+      window.open(url, '_blank');
+    }
+  };
+
   const handleToolSubmit = async ({ tool, file, url, options }) => {
     const userMsgId = Date.now().toString();
     const jobMsgId = (Date.now() + 1).toString();
@@ -356,15 +380,13 @@ export default function App() {
                             <span>Processing complete! Output saved to R2.</span>
                           </div>
                           {msg.downloadUrl && (
-                            <a
-                              href={msg.downloadUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              onClick={() => handleForceDownload(msg.downloadUrl, msg.filename)}
                               className="flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-medium transition-colors shadow-sm"
                             >
                               <Download size={14} />
                               <span>Download Output</span>
-                            </a>
+                            </button>
                           )}
                         </div>
                       ) : (
