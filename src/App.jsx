@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Paperclip, Send, Sparkles, Download, Loader2, CheckCircle2, AlertCircle, MessageSquare, Menu, Moon, Sun, StickyNote, User } from 'lucide-react';
+import { Plus, Paperclip, Send, Sparkles, Download, Loader2, CheckCircle2, AlertCircle, MessageSquare, Menu, Moon, Sun, StickyNote, User, Pencil, Trash2 } from 'lucide-react';
 import { submitJob, pollJobStatus } from './api/client';
 import ToolModal from './components/ToolModal';
 
-// --- ANIMATED PROGRESS COMPONENT ---
 const ProcessingStage = () => {
   const [stageIndex, setStageIndex] = useState(0);
   const stages = [
@@ -30,7 +29,6 @@ const ProcessingStage = () => {
 };
 
 export default function App() {
-  // --- STATE MANAGEMENT ---
   const [sessions, setSessions] = useState(() => {
     const saved = localStorage.getItem('atomdev-sessions');
     return saved ? JSON.parse(saved) : [{ id: Date.now().toString(), title: 'New Workspace', messages: [] }];
@@ -41,16 +39,17 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
-  // Auto-scroll reference
+  // --- SESSION EDITING STATE ---
+  const [editingSessionId, setEditingSessionId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+  
   const messagesEndRef = useRef(null);
 
-  // Theme State
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('atomdev-theme');
     return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
   });
 
-  // Save Theme
   useEffect(() => {
     localStorage.setItem('atomdev-theme', isDarkMode ? 'dark' : 'light');
     if (isDarkMode) {
@@ -60,7 +59,6 @@ export default function App() {
     }
   }, [isDarkMode]);
 
-  // Save Sessions
   useEffect(() => {
     localStorage.setItem('atomdev-sessions', JSON.stringify(sessions));
   }, [sessions]);
@@ -68,7 +66,6 @@ export default function App() {
   const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
   const messages = activeSession?.messages || [];
 
-  // Auto-scroll effect whenever messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -78,7 +75,8 @@ export default function App() {
       if (session.id === activeSessionId) {
         const newMessages = typeof updater === 'function' ? updater(session.messages) : updater;
         let title = session.title;
-        if (session.messages.length === 0 && newMessages.length > 0) {
+        // Auto-name the session if it's currently default and gets its first message
+        if (session.messages.length === 0 && newMessages.length > 0 && session.title === 'New Workspace') {
            title = newMessages[0].content.substring(0, 25) + "...";
         }
         return { ...session, messages: newMessages, title };
@@ -93,19 +91,49 @@ export default function App() {
     setActiveSessionId(newSession.id);
   };
 
-  // --- SMART COMMAND BAR LOGIC ---
+  // --- SESSION MANAGEMENT FUNCTIONS ---
+  const deleteSession = (e, id) => {
+    e.stopPropagation();
+    const updatedSessions = sessions.filter(s => s.id !== id);
+    if (updatedSessions.length === 0) {
+      // If we deleted the last session, create a new blank one
+      const newSession = { id: Date.now().toString(), title: 'New Workspace', messages: [] };
+      setSessions([newSession]);
+      setActiveSessionId(newSession.id);
+    } else {
+      setSessions(updatedSessions);
+      // If we deleted the active session, switch to the newest available one
+      if (activeSessionId === id) {
+        setActiveSessionId(updatedSessions[0].id);
+      }
+    }
+  };
+
+  const startEditing = (e, session) => {
+    e.stopPropagation();
+    setEditingSessionId(session.id);
+    setEditTitle(session.title);
+  };
+
+  const saveEdit = (e) => {
+    e?.preventDefault();
+    if (!editTitle.trim()) {
+      setEditingSessionId(null);
+      return;
+    }
+    setSessions(sessions.map(s => s.id === editingSessionId ? { ...s, title: editTitle.trim() } : s));
+    setEditingSessionId(null);
+  };
+
   const handleTextSubmit = (e) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
-    // Detect if input is a URL
     const isUrl = /^https?:\/\//i.test(inputText.trim());
 
     if (isUrl) {
-      // It's a link! Auto-trigger video downloader
       handleToolSubmit({ tool: 'download_video', url: inputText.trim(), options: {} });
     } else {
-      // It's just text! Save it as a Workspace Note
       const userMsgId = Date.now().toString();
       updateMessages(prev => [...prev, { 
         id: userMsgId, 
@@ -117,7 +145,6 @@ export default function App() {
     setInputText('');
   };
 
-  // --- TOOL SUBMISSION LOGIC ---
   const handleToolSubmit = async ({ tool, file, url, options }) => {
     const userMsgId = Date.now().toString();
     const jobMsgId = (Date.now() + 1).toString();
@@ -171,7 +198,6 @@ export default function App() {
   };
 
   return (
-    // MASTER WRAPPER: Forces Dark Mode across the entire viewport robustly
     <div className={`${isDarkMode ? 'dark' : ''} h-screen w-screen overflow-hidden`}>
       <div className="flex h-full w-full bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-200 font-sans transition-colors duration-300">
         
@@ -188,26 +214,65 @@ export default function App() {
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto mt-2 space-y-1 px-3 custom-scrollbar">
+            {/* The min-h-0 class is crucial here to fix scroll boundaries in Tailwind flex columns */}
+            <div className="flex-1 overflow-y-auto min-h-0 mt-2 space-y-1 px-3 custom-scrollbar">
               <p className="text-xs font-bold tracking-wider text-gray-400 dark:text-gray-500 px-1 mb-3 uppercase">Workspace History</p>
+              
               {sessions.map(session => (
-                <button
-                  key={session.id}
-                  onClick={() => setActiveSessionId(session.id)}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-3 transition-colors ${
+                <div 
+                  key={session.id} 
+                  className={`group relative flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm transition-colors ${
                     activeSessionId === session.id 
                       ? 'bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-gray-200 dark:border-gray-700 font-medium' 
                       : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-800/50 hover:text-gray-700 dark:hover:text-gray-200'
                   }`}
                 >
-                  <MessageSquare size={16} className="shrink-0" />
-                  <span className="truncate">{session.title}</span>
-                </button>
+                  {editingSessionId === session.id ? (
+                    <form onSubmit={saveEdit} className="flex-1 flex items-center min-w-0">
+                      <MessageSquare size={16} className="shrink-0 mr-3 text-indigo-500" />
+                      <input
+                        autoFocus
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        onBlur={saveEdit}
+                        className="flex-1 bg-transparent border-b border-indigo-500 focus:outline-none px-1 py-0.5 min-w-0 text-gray-800 dark:text-gray-200"
+                      />
+                    </form>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={() => setActiveSessionId(session.id)} 
+                        className="flex-1 flex items-center gap-3 truncate text-left min-w-0"
+                      >
+                        <MessageSquare size={16} className="shrink-0" />
+                        <span className="truncate">{session.title}</span>
+                      </button>
+                      
+                      {/* Edit and Delete Actions - Visible on hover */}
+                      <div className="hidden group-hover:flex items-center gap-1.5 shrink-0 ml-2">
+                        <button 
+                          onClick={(e) => startEditing(e, session)} 
+                          className="p-1.5 rounded-md text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-indigo-500 transition-colors"
+                          title="Rename workspace"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button 
+                          onClick={(e) => deleteSession(e, session.id)} 
+                          className="p-1.5 rounded-md text-gray-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500 transition-colors"
+                          title="Delete workspace"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               ))}
             </div>
 
-            {/* RESTORED ABOUT ME SECTION */}
-            <div className="px-3 mt-auto pt-4 pb-2 border-t border-gray-300 dark:border-gray-800 bg-gray-100 dark:bg-gray-900">
+            <div className="px-3 mt-auto pt-4 pb-2 border-t border-gray-300 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 shrink-0">
               <p className="text-xs font-bold tracking-wider text-gray-400 dark:text-gray-500 mb-2 uppercase px-1">About Me</p>
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-xl shadow-sm mb-3">
                 <div className="flex items-center gap-2 mb-1">
@@ -229,7 +294,6 @@ export default function App() {
         {/* MAIN AREA */}
         <div className="flex-1 flex flex-col relative h-full min-w-0">
           
-          {/* TOP NAVIGATION BAR */}
           <header className="h-14 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-10 shrink-0">
             <div className="flex items-center gap-3">
               <button 
@@ -248,7 +312,6 @@ export default function App() {
             </button>
           </header>
 
-          {/* CHAT FEED WITH MASSIVE BOTTOM PADDING (pb-48) TO PREVENT OVERLAP */}
           <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-48">
             <div className="max-w-3xl mx-auto space-y-6">
               
@@ -320,12 +383,10 @@ export default function App() {
                 </div>
               ))}
               
-              {/* Invisible element to force auto-scrolling to the true bottom */}
               <div ref={messagesEndRef} className="h-4 w-full" />
             </div>
           </div>
 
-          {/* STICKY COMPOSER */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent dark:from-gray-950 dark:via-gray-950 p-4 md:p-6 pt-20 pointer-events-none">
             <div className="max-w-3xl mx-auto pointer-events-auto">
               <form 
