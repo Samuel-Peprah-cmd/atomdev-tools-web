@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { submitJob, pollJobStatus } from './api/client';
 import ToolModal from './components/ToolModal';
 import OwnerModal from './components/OwnerModal';
+import TopUpModal from './components/TopUpModal'; // <-- NEW IMPORT
 
 // Initialize Supabase Client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -56,14 +57,12 @@ const ProcessingStage = () => {
     "Running heavy AI algorithms...",
     "Packaging final results..."
   ];
-
   useEffect(() => {
     const timer = setInterval(() => {
       setStageIndex((prev) => (prev < stages.length - 1 ? prev + 1 : prev));
     }, 4000);
     return () => clearInterval(timer);
   }, []);
-
   return (
     <div className="flex flex-col gap-2 bg-indigo-50 dark:bg-indigo-900/30 p-3.5 rounded-xl border border-indigo-500/20 text-sm">
       <div className="flex items-center gap-3 text-indigo-600 dark:text-indigo-400 font-medium">
@@ -84,36 +83,35 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
+  const [authMode, setAuthMode] = useState('login'); 
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState(null);
-
   const [sessions, setSessions] = useState(getStoredSessions);
   const [activeSessionId, setActiveSessionId] = useState(sessions[0]?.id);
   const [inputText, setInputText] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => !isCompactViewport());
+  
+  // <-- NEW STATE FOR CREDITS -->
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [showDepletedModal, setShowDepletedModal] = useState(false);
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => !isCompactViewport());
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-
   const messagesEndRef = useRef(null);
   const profileMenuRef = useRef(null);
   const [isDarkMode, setIsDarkMode] = useState(getInitialTheme);
 
-  // Monitor Supabase Auth state
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setAuthSession(session);
     });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setAuthSession(session);
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
@@ -142,7 +140,6 @@ export default function App() {
     return () => desktopQuery.removeEventListener('change', handleViewportChange);
   }, []);
 
-  // Close the profile dropdown when tapping/clicking outside it
   useEffect(() => {
     if (!showProfileMenu) return;
     const handleClickOutside = (event) => {
@@ -221,7 +218,6 @@ export default function App() {
     e.preventDefault();
     setAuthLoading(true);
     setAuthError(null);
-
     try {
       if (authMode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -244,9 +240,7 @@ export default function App() {
   const handleTextSubmit = (e) => {
     e.preventDefault();
     if (!inputText.trim()) return;
-
     const isUrl = /^https?:\/\//i.test(inputText.trim());
-
     if (isUrl) {
       handleToolSubmit({ tool: 'download_video', url: inputText.trim(), options: {} });
     } else {
@@ -262,12 +256,17 @@ export default function App() {
   };
 
   const handleForceDownload = async (url, filename) => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isVideo = url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.mov');
+    if (isMobile && isVideo) {
+      window.open(url, '_blank');
+      return;
+    }
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error('Network response failed');
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
-
       const a = document.createElement('a');
       a.href = blobUrl;
       a.download = filename || 'AtomDev_Output';
@@ -286,24 +285,19 @@ export default function App() {
       setShowAuthModal(true);
       return;
     }
-
     const token = authSession.access_token;
     const userMsgId = Date.now().toString();
     const jobMsgId = (Date.now() + 1).toString();
-
     let contentStr = '';
     if (files && files.length > 0) contentStr = `[Files]: ${files.length} documents -> ${tool}`;
     else if (file) contentStr = `[File]: ${file.name} -> ${tool}`;
     else contentStr = `[URL]: ${url} -> ${tool}`;
-
     const userMessage = { id: userMsgId, role: 'user', type: 'command', content: contentStr };
     const initialJobMessage = {
       id: jobMsgId, role: 'assistant', type: 'job_status', status: 'pending',
       tool: tool, downloadUrl: null, error: null
     };
-
     updateMessages((prev) => [...prev, userMessage, initialJobMessage]);
-
     try {
       const { job_id } = await submitJob({ tool, file, files, url, options, token });
       await pollJobStatus(job_id, token, (statusUpdate) => {
@@ -322,6 +316,10 @@ export default function App() {
         );
       });
     } catch (err) {
+      // <-- CATCH 402 INSUFFICIENT CREDITS -->
+      if (err.message.includes("Insufficient credits") || err.message.includes("402")) {
+        setShowDepletedModal(true);
+      }
       updateMessages((prev) =>
         prev.map((msg) =>
           msg.id === jobMsgId ? { ...msg, status: 'failed', error: err.message } : msg
@@ -333,8 +331,7 @@ export default function App() {
   return (
     <div className="h-[100dvh] w-full overflow-hidden">
       <div className="relative flex h-full w-full overflow-hidden bg-gray-50 font-sans text-gray-800 transition-colors duration-300 dark:bg-gray-950 dark:text-gray-200">
-
-        {/* RETRACTABLE SIDEBAR */}
+        
         {isSidebarOpen && (
           <button
             type="button"
@@ -361,7 +358,6 @@ export default function App() {
                 <span>New Session</span>
               </button>
             </div>
-
             <div className="flex-1 overflow-y-auto min-h-0 mt-2 space-y-1 px-3 custom-scrollbar">
               <p className="text-xs font-bold tracking-wider text-gray-400 dark:text-gray-500 px-1 mb-3 uppercase">Workspace History</p>
               {sessions.map(session => (
@@ -408,7 +404,6 @@ export default function App() {
                 </div>
               ))}
             </div>
-
             <div className="px-3 mt-auto pt-4 pb-2 border-t border-gray-300 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 shrink-0">
               <button onClick={() => setIsOwnerModalOpen(true)} className="w-full flex items-center gap-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 p-2.5 rounded-xl shadow-sm mb-3 transition-colors text-left group">
                 <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-800/50 transition-colors">
@@ -425,7 +420,7 @@ export default function App() {
             </div>
           </div>
         </aside>
-
+        
         {/* MAIN AREA */}
         <div className="flex-1 flex flex-col relative h-full min-w-0">
           <header className="h-14 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-10 shrink-0">
@@ -450,11 +445,10 @@ export default function App() {
                     onClick={() => setShowProfileMenu((prev) => !prev)}
                     className="flex items-center gap-2 p-1 pr-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
                   >
-                    {/* Shows Google Avatar if available, otherwise a generic User icon */}
                     {authSession.user.user_metadata?.avatar_url ? (
-                      <img 
-                        src={authSession.user.user_metadata.avatar_url} 
-                        alt="Profile" 
+                      <img
+                        src={authSession.user.user_metadata.avatar_url}
+                        alt="Profile"
                         className="w-7 h-7 rounded-full object-cover border border-gray-200 dark:border-gray-600"
                       />
                     ) : (
@@ -466,8 +460,6 @@ export default function App() {
                       {authSession.user.user_metadata?.full_name || authSession.user.email.split('@')[0]}
                     </span>
                   </button>
-                  
-                  {/* Dropdown Menu (toggled by click/tap, works on mobile) */}
                   {showProfileMenu && (
                     <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg z-50">
                       <div className="p-2 border-b border-gray-100 dark:border-gray-800">
@@ -475,7 +467,7 @@ export default function App() {
                         <p className="text-xs text-gray-800 dark:text-gray-200 truncate px-2 mt-1">{authSession.user.email}</p>
                       </div>
                       <div className="p-1">
-                        <button 
+                        <button
                           onClick={() => {
                             supabase.auth.signOut();
                             setShowProfileMenu(false);
@@ -495,7 +487,6 @@ export default function App() {
               </button>
             </div>
           </header>
-
           <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-48">
             <div className="max-w-3xl mx-auto space-y-6">
               {messages.length === 0 && (
@@ -559,8 +550,7 @@ export default function App() {
               <div ref={messagesEndRef} className="h-4 w-full" />
             </div>
           </div>
-
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-t from-gray-50 via-gray-50 to-transparent dark:from-gray-950 dark:via-gray-950 p-4 md:p-6 pt-20 pointer-events-none">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent dark:from-gray-950 dark:via-gray-950 p-4 md:p-6 pt-20 pointer-events-none">
             <div className="max-w-3xl mx-auto pointer-events-auto">
               <form onSubmit={handleTextSubmit} className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-xl flex items-center p-2 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
                 <button type="button" onClick={() => setIsModalOpen(true)} className="p-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors" title="Open AtomDev Tool Picker">
@@ -589,13 +579,11 @@ export default function App() {
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
               Sign in to execute high-performance AI tools and track job history.
             </p>
-
             {authError && (
               <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-600 dark:text-rose-400 text-xs">
                 {authError}
               </div>
             )}
-
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
@@ -609,11 +597,10 @@ export default function App() {
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
                 <input
                   type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="*********"
                   className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
               </div>
-
               <button
                 type="submit" disabled={authLoading}
                 className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
@@ -622,7 +609,6 @@ export default function App() {
                 <span>{authMode === 'login' ? 'Sign In' : 'Create Account'}</span>
               </button>
             </form>
-
             <div className="mt-4 text-center">
               <button
                 onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
@@ -634,6 +620,34 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* DEPLETED CREDITS MODAL */}
+      {showDepletedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 w-full max-w-sm rounded-3xl p-6 text-center shadow-2xl relative">
+            <button onClick={() => setShowDepletedModal(false)} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400"><X size={20} /></button>
+            <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center text-rose-600 dark:text-rose-400 mx-auto mb-4 mt-2">
+              <Sparkles size={28} />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Credits Depleted</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">You have run out of AI computation credits. Please top up to continue running advanced tasks.</p>
+            <button 
+              onClick={() => { setShowDepletedModal(false); setShowTopUpModal(true); }}
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg transition-colors"
+            >
+              Top Up Now
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PAYSTACK TOP UP MODAL */}
+      <TopUpModal 
+        isOpen={showTopUpModal} 
+        onClose={() => setShowTopUpModal(false)} 
+        userId={authSession?.user?.id}
+        userEmail={authSession?.user?.email}
+      />
 
       <ToolModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmitJob={handleToolSubmit} />
       <OwnerModal isOpen={isOwnerModalOpen} onClose={() => setIsOwnerModalOpen(false)} />
