@@ -318,15 +318,27 @@ export default function App() {
   const handleForceDownload = async (url, filename) => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const isVideo = url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.mov');
+
+    // MOBILE VIDEO FIX: Open directly in the native browser/media player.
+    // This allows iOS/Android to recognize it as a video, allowing "Save to Gallery/Photos".
     if (isMobile && isVideo) {
-      window.open(url, '_blank');
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       return;
     }
+
+    // DESKTOP OR NON-VIDEO: Use Blob to force a silent, direct download
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error('Network response failed');
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
+      
       const a = document.createElement('a');
       a.href = blobUrl;
       a.download = filename || 'AtomDev_Output';
@@ -335,7 +347,7 @@ export default function App() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(blobUrl);
     } catch (e) {
-      console.warn("Blob download failed, falling back to new tab:", e);
+      console.warn("Blob download failed (CORS or encoding), falling back to direct link:", e);
       window.open(url, '_blank');
     }
   };
