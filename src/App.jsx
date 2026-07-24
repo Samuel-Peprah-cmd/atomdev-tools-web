@@ -349,7 +349,7 @@ export default function App() {
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
                         onBlur={saveEdit}
-                        className="flex-1 bg-transparent border-b border-indigo-500 focus:outline-none px-1 py-0.5 min-w-0 text-gray-800 dark:text-gray-200"
+                        className="flex-1 bg-transparent border-b border-indigo-500 focus:outline-none px-1 py-0.5 min-w-0 text-gray-800 dark:text-gray-200 text-[16px] md:text-sm"
                       />
                     </form>
                   ) : (
