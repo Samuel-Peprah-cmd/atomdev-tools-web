@@ -1,5 +1,46 @@
 @import "tailwindcss";
 
+/* Let the in-app theme toggle control every `dark:` utility. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #f9fafb;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.dark body {
+  background: #030712;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+@media (pointer: coarse) {
+  button,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+}
+
 /* A slight custom scrollbar to match the Claude.ai vibe */
 ::-webkit-scrollbar {
   width: 6px;

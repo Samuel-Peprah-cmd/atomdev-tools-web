@@ -4,6 +4,48 @@ import { submitJob, pollJobStatus } from './api/client';
 import ToolModal from './components/ToolModal';
 import OwnerModal from './components/OwnerModal';
 
+const DEFAULT_SESSION_TITLE = 'New Workspace';
+
+const createSession = () => ({
+  id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  title: DEFAULT_SESSION_TITLE,
+  messages: [],
+});
+
+const getStoredSessions = () => {
+  try {
+    const saved = localStorage.getItem('atomdev-sessions');
+    const parsed = saved ? JSON.parse(saved) : null;
+
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed.map((session) => ({
+        id: session?.id ? String(session.id) : createSession().id,
+        title: typeof session?.title === 'string' && session.title.trim()
+          ? session.title
+          : DEFAULT_SESSION_TITLE,
+        messages: Array.isArray(session?.messages) ? session.messages : [],
+      }));
+    }
+  } catch (error) {
+    console.warn('Unable to restore saved workspaces.', error);
+  }
+
+  return [createSession()];
+};
+
+const getInitialTheme = () => {
+  try {
+    const saved = localStorage.getItem('atomdev-theme');
+    if (saved === 'dark' || saved === 'light') return saved === 'dark';
+  } catch (error) {
+    console.warn('Unable to restore the saved theme.', error);
+  }
+
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+};
+
+const isCompactViewport = () => window.matchMedia?.('(max-width: 767px)').matches ?? false;
+
 const ProcessingStage = () => {
   const [stageIndex, setStageIndex] = useState(0);
   const stages = [
@@ -36,39 +78,47 @@ const ProcessingStage = () => {
 };
 
 export default function App() {
-  const [sessions, setSessions] = useState(() => {
-    const saved = localStorage.getItem('atomdev-sessions');
-    return saved ? JSON.parse(saved) : [{ id: Date.now().toString(), title: 'New Workspace', messages: [] }];
-  });
+  const [sessions, setSessions] = useState(getStoredSessions);
   
   const [activeSessionId, setActiveSessionId] = useState(sessions[0]?.id);
   const [inputText, setInputText] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => !isCompactViewport());
   
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   
   const messagesEndRef = useRef(null);
 
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem('atomdev-theme');
-    return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  });
+  const [isDarkMode, setIsDarkMode] = useState(getInitialTheme);
 
   useEffect(() => {
-    localStorage.setItem('atomdev-theme', isDarkMode ? 'dark' : 'light');
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    document.documentElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
+
+    try {
+      localStorage.setItem('atomdev-theme', isDarkMode ? 'dark' : 'light');
+    } catch (error) {
+      console.warn('Unable to save the selected theme.', error);
     }
   }, [isDarkMode]);
 
   useEffect(() => {
-    localStorage.setItem('atomdev-sessions', JSON.stringify(sessions));
+    try {
+      localStorage.setItem('atomdev-sessions', JSON.stringify(sessions));
+    } catch (error) {
+      console.warn('Unable to save workspaces locally.', error);
+    }
   }, [sessions]);
+
+  useEffect(() => {
+    const desktopQuery = window.matchMedia('(min-width: 768px)');
+    const handleViewportChange = (event) => setIsSidebarOpen(event.matches);
+
+    desktopQuery.addEventListener('change', handleViewportChange);
+    return () => desktopQuery.removeEventListener('change', handleViewportChange);
+  }, []);
 
   const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
   const messages = activeSession?.messages || [];
@@ -82,7 +132,7 @@ export default function App() {
       if (session.id === activeSessionId) {
         const newMessages = typeof updater === 'function' ? updater(session.messages) : updater;
         let title = session.title;
-        if (session.messages.length === 0 && newMessages.length > 0 && session.title === 'New Workspace') {
+        if (session.messages.length === 0 && newMessages.length > 0 && session.title === DEFAULT_SESSION_TITLE) {
            title = newMessages[0].content.substring(0, 25) + "...";
         }
         return { ...session, messages: newMessages, title };
@@ -92,24 +142,25 @@ export default function App() {
   };
 
   const createNewSession = () => {
-    const newSession = { id: Date.now().toString(), title: 'New Workspace', messages: [] };
-    setSessions([newSession, ...sessions]);
+    const newSession = createSession();
+    setSessions((currentSessions) => [newSession, ...currentSessions]);
     setActiveSessionId(newSession.id);
+    if (isCompactViewport()) setIsSidebarOpen(false);
   };
 
   const deleteSession = (e, id) => {
     e.stopPropagation();
-    const updatedSessions = sessions.filter(s => s.id !== id);
-    if (updatedSessions.length === 0) {
-      const newSession = { id: Date.now().toString(), title: 'New Workspace', messages: [] };
-      setSessions([newSession]);
-      setActiveSessionId(newSession.id);
-    } else {
-      setSessions(updatedSessions);
-      if (activeSessionId === id) {
-        setActiveSessionId(updatedSessions[0].id);
-      }
-    }
+    setSessions((currentSessions) => {
+      const updatedSessions = currentSessions.filter((session) => session.id !== id);
+      const nextSessions = updatedSessions.length > 0 ? updatedSessions : [createSession()];
+
+      setActiveSessionId((currentActiveId) => (
+        currentActiveId === id ? nextSessions[0].id : currentActiveId
+      ));
+
+      return nextSessions;
+    });
+    if (editingSessionId === id) setEditingSessionId(null);
   };
 
   const startEditing = (e, session) => {
@@ -124,8 +175,20 @@ export default function App() {
       setEditingSessionId(null);
       return;
     }
-    setSessions(sessions.map(s => s.id === editingSessionId ? { ...s, title: editTitle.trim() } : s));
+    setSessions((currentSessions) => currentSessions.map((session) => (
+      session.id === editingSessionId ? { ...session, title: editTitle.trim() } : session
+    )));
     setEditingSessionId(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingSessionId(null);
+    setEditTitle('');
+  };
+
+  const selectSession = (id) => {
+    setActiveSessionId(id);
+    if (isCompactViewport()) setIsSidebarOpen(false);
   };
 
   const handleTextSubmit = (e) => {
@@ -233,12 +296,27 @@ export default function App() {
   };
 
   return (
-    <div className={`${isDarkMode ? 'dark' : ''} h-screen w-screen overflow-hidden`}>
-      <div className="flex h-full w-full bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-200 font-sans transition-colors duration-300">
+    <div className="h-[100dvh] w-full overflow-hidden">
+      <div className="relative flex h-full w-full overflow-hidden bg-gray-50 font-sans text-gray-800 transition-colors duration-300 dark:bg-gray-950 dark:text-gray-200">
         
         {/* RETRACTABLE SIDEBAR */}
-        <div className={`${isSidebarOpen ? 'w-64 border-r' : 'w-0'} shrink-0 bg-gray-100 dark:bg-gray-900 border-gray-200 dark:border-gray-800 transition-all duration-300 flex flex-col overflow-hidden h-full`}>
-          <div className="w-64 flex flex-col h-full">
+        {isSidebarOpen && (
+          <button
+            type="button"
+            aria-label="Close workspace menu"
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 z-30 bg-slate-950/35 backdrop-blur-[1px] md:hidden"
+          />
+        )}
+        <aside
+          id="workspace-sidebar"
+          className={`fixed inset-y-0 left-0 z-40 flex h-[100dvh] shrink-0 flex-col overflow-hidden border-gray-200 bg-gray-100 transition-[width,transform,border-color] duration-300 ease-out dark:border-gray-800 dark:bg-gray-900 md:relative md:z-auto md:h-full ${
+            isSidebarOpen
+              ? 'w-[min(19rem,calc(100vw-2.5rem))] translate-x-0 border-r shadow-2xl shadow-slate-950/15 md:w-64 md:shadow-none'
+              : 'w-[min(19rem,calc(100vw-2.5rem))] -translate-x-full border-r shadow-none md:w-0 md:translate-x-0 md:border-r-0'
+          }`}
+        >
+          <div className="flex h-full w-[min(19rem,calc(100vw-2.5rem))] flex-col md:w-64">
             <div className="p-3">
               <button 
                 onClick={createNewSession}
@@ -320,12 +398,12 @@ export default function App() {
                 </div>
               </button>
               <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center tracking-wide">
-                AtomDev Tools v0.8.6
+                AtomDev Tools v0.8.7
               </p>
             </div>
 
           </div>
-        </div>
+        </aside>
 
         {/* MAIN AREA */}
         <div className="flex-1 flex flex-col relative h-full min-w-0">
