@@ -437,15 +437,25 @@ export default function App() {
             {/* --- BOTTOM SIDEBAR ACTIONS (Including the new Credit Badge) --- */}
             <div className="px-3 mt-auto pt-4 pb-2 border-t border-gray-300 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 shrink-0">
               
-              {/* BEAUTIFUL CREDIT BADGE */}
-              {authSession && credits !== null && (
-                <div className="mb-3 p-3 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <Sparkles size={16} className="text-emerald-500" />
-                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Compute Credits</span>
+              {authSession && (
+                <button 
+                  onClick={() => setShowTopUpModal(true)}
+                  className="w-full mb-3 p-3 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 hover:from-emerald-500/20 hover:to-teal-500/20 border border-emerald-500/20 rounded-xl flex items-center justify-between shadow-sm transition-all group text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                      <Sparkles size={16} className="text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="flex flex-col items-start">
+                      <span className="text-xs font-bold text-gray-800 dark:text-gray-200">Credits</span>
+                      <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Click to Top Up</span>
+                    </div>
                   </div>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{credits}</span>
-                </div>
+                  <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                    {/* Fallback to '10' for brand new users who haven't run their first job yet */}
+                    {credits !== null ? credits : '10'}
+                  </span>
+                </button>
               )}
 
               <button onClick={() => setIsOwnerModalOpen(true)} className="w-full flex items-center gap-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 p-2.5 rounded-xl shadow-sm mb-3 transition-colors text-left group">
