@@ -49,6 +49,8 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
     { id: 'pdf_to_images', name: 'PDF to PNG Zip', category: 'Documents', icon: FileArchive, desc: 'Convert every PDF page to PNG images' },
     { id: 'merge_pdfs', name: 'Merge PDFs', category: 'Documents', icon: FileArchive, desc: 'Combine multiple PDF files into one' },
     { id: 'split_pdf', name: 'Extract Pages (Split PDF)', category: 'Documents', icon: Scissors, desc: 'Pull a specific page range from a PDF' },
+    { id: 'compress_pdf', name: 'Compress PDF', category: 'Documents', icon: FileArchive, desc: 'Drastically reduce PDF file size for emailing' },
+    { id: 'compress_docx', name: 'Compress Word Doc', category: 'Documents', icon: FileText, desc: 'Reduce the file size of heavy .docx files' },
     
     // Spreadsheets
     { id: 'csv_to_xlsx', name: 'CSV to Excel', category: 'Spreadsheets', icon: Table, desc: 'Convert raw CSV into formatted Excel' },
@@ -58,6 +60,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
     { id: 'remove_background', name: 'AI Background Removal', category: 'Images', icon: ImageMinus, desc: 'Instantly strip the background from any photo' },
     { id: 'convert_image', name: 'Format Converter', category: 'Images', icon: ImageIcon, desc: 'Convert between PNG, JPG, WEBP, TIFF' },
     { id: 'grayscale_image', name: 'Grayscale Filter', category: 'Images', icon: ImageIcon, desc: 'Apply monochrome filter to an image' },
+    { id: 'compress_image', name: 'Compress Image', category: 'Images', icon: ImageIcon, desc: 'Shrink image file size without losing visible quality' },
   ];
 
   const categories = ['All', 'Presentations', 'Documents', 'Media', 'Spreadsheets', 'Images'];

@@ -1,12 +1,11 @@
 const API_URL = import.meta.env.VITE_HEAVY_API_URL;
 const API_KEY = import.meta.env.VITE_ATOMDEV_API_KEY;
 
-export async function submitJob({ tool, file, files, url, options = {} }) {
+export async function submitJob({ tool, file, files, url, options = {}, token }) {
   const formData = new FormData();
   formData.append("tool", tool);
   formData.append("options", JSON.stringify(options));
   
-  // Handle multiple files for PDF merging
   if (files && files.length > 0) {
     files.forEach(f => formData.append("files", f));
   } else if (file) {
@@ -19,6 +18,7 @@ export async function submitJob({ tool, file, files, url, options = {} }) {
     method: "POST",
     headers: {
       "X-API-Key": API_KEY,
+      "Authorization": `Bearer ${token}`,
       "ngrok-skip-browser-warning": "true",
     },
     body: formData,
@@ -31,26 +31,24 @@ export async function submitJob({ tool, file, files, url, options = {} }) {
   return await response.json();
 }
 
-export async function pollJobStatus(jobId, onProgress) {
+export async function pollJobStatus(jobId, token, onProgress) {
   return new Promise((resolve, reject) => {
     const interval = setInterval(async () => {
       try {
         const response = await fetch(`${API_URL}/atomdev-api/jobs/${jobId}`, {
           headers: {
             "X-API-Key": API_KEY,
-            "ngrok-skip-browser-warning": "true", // Skips the Ngrok intercept
+            "Authorization": `Bearer ${token}`,
+            "ngrok-skip-browser-warning": "true", 
           },
         });
-
         if (!response.ok) {
           clearInterval(interval);
           reject(new Error("Job status check failed"));
           return;
         }
-
         const data = await response.json();
         onProgress(data);
-
         if (data.status === "done") {
           clearInterval(interval);
           resolve(data);
@@ -62,6 +60,6 @@ export async function pollJobStatus(jobId, onProgress) {
         clearInterval(interval);
         reject(err);
       }
-    }, 2500); 
+    }, 2500);
   });
 }

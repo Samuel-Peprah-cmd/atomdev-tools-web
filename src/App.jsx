@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Paperclip, Send, Sparkles, Download, Loader2, CheckCircle2, AlertCircle, MessageSquare, Menu, Moon, Sun, StickyNote, User, Pencil, Trash2, Clock, MoreVertical } from 'lucide-react';
+import { useAuth, SignInButton, UserButton, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { submitJob, pollJobStatus } from './api/client';
 import ToolModal from './components/ToolModal';
 import OwnerModal from './components/OwnerModal';
@@ -78,8 +79,10 @@ const ProcessingStage = () => {
 };
 
 export default function App() {
+  // --- CLERK AUTHENTICATION ---
+  const { getToken, isSignedIn } = useAuth();
+
   const [sessions, setSessions] = useState(getStoredSessions);
-  
   const [activeSessionId, setActiveSessionId] = useState(sessions[0]?.id);
   const [inputText, setInputText] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -212,16 +215,13 @@ export default function App() {
     setInputText('');
   };
 
-  // --- NEW: FORCE DOWNLOAD HANDLER ---
   const handleForceDownload = async (url, filename) => {
     try {
-      // Fetch the file in the background as a blob to prevent browser rendering
       const response = await fetch(url);
       if (!response.ok) throw new Error('Network response failed');
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       
-      // Programmatically trigger a hidden anchor click
       const a = document.createElement('a');
       a.href = blobUrl;
       a.download = filename || 'AtomDev_Output';
@@ -230,17 +230,23 @@ export default function App() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(blobUrl);
     } catch (e) {
-      // Fallback: If CORS blocks the fetch, open normally
       console.warn("Blob download failed (CORS), falling back to new tab:", e);
       window.open(url, '_blank');
     }
   };
 
   const handleToolSubmit = async ({ tool, file, files, url, options }) => {
+    // --- VERIFY AUTH BEFORE SUBMITTING ---
+    if (!isSignedIn) {
+      alert("You must be signed in to use AtomDev AI tools.");
+      return;
+    }
+
+    const token = await getToken();
+
     const userMsgId = Date.now().toString();
     const jobMsgId = (Date.now() + 1).toString();
 
-    // Dynamically format the chat message based on input type
     let contentStr = '';
     if (files && files.length > 0) contentStr = `[Files]: ${files.length} documents -> ${tool}`;
     else if (file) contentStr = `[File]: ${file.name} -> ${tool}`;
@@ -266,11 +272,11 @@ export default function App() {
     updateMessages((prev) => [...prev, userMessage, initialJobMessage]);
 
     try {
-      // Pass the new files array to your API client
-      const { job_id } = await submitJob({ tool, file, files, url, options });
+      // Pass the token to submitJob
+      const { job_id } = await submitJob({ tool, file, files, url, options, token });
 
-      await pollJobStatus(job_id, (statusUpdate) => {
-        // ... (keep the rest of your pollJobStatus logic the exact same)
+      // Pass the token to pollJobStatus
+      await pollJobStatus(job_id, token, (statusUpdate) => {
         updateMessages((prev) =>
           prev.map((msg) =>
             msg.id === jobMsgId
@@ -425,7 +431,7 @@ export default function App() {
                 </div>
               </button>
               <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center tracking-wide">
-                AtomDev Tools v0.8.7
+                AtomDev Tools v0.8.8
               </p>
             </div>
 
@@ -445,12 +451,26 @@ export default function App() {
               </button>
               <span className="font-semibold text-gray-800 dark:text-gray-200 tracking-tight">AtomDev Workspace</span>
             </div>
-            <button 
-              onClick={() => setIsDarkMode(!isDarkMode)} 
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400"
-            >
-              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
+            
+            <div className="flex items-center gap-2">
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button className="px-4 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
+                    Sign In
+                  </button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <div className="pt-1.5"><UserButton /></div>
+              </SignedIn>
+              
+              <button 
+                onClick={() => setIsDarkMode(!isDarkMode)} 
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 ml-2"
+              >
+                {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+            </div>
           </header>
 
           <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-48">
