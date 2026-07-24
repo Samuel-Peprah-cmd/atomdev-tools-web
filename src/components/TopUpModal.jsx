@@ -3,15 +3,11 @@ import { X, CreditCard, Sparkles } from 'lucide-react';
 import { usePaystackPayment } from 'react-paystack';
 
 export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUpSuccess }) {
-  // Start with 10 credits by default
   const [creditAmount, setCreditAmount] = useState(10);
   
   if (!isOpen) return null;
 
-  // We parse the amount safely so the app doesn't crash if the user temporarily deletes everything
   const parsedAmount = parseInt(creditAmount, 10) || 0;
-
-  // Pricing Logic: 10 credits = 5 GHS. Therefore 1 credit = 0.5 GHS.
   const priceInGHS = parsedAmount * 0.5;
   const amountInPesewas = priceInGHS * 100;
 
@@ -24,21 +20,25 @@ export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUp
     metadata: {
       user_id: userId,
       credits: parsedAmount
-    }
+    },
+    // Guaranteed fallback redirect if a mobile bank forces a full page reload
+    callback_url: window.location.origin
   };
 
   const initializePayment = usePaystackPayment(config);
 
   const handleSuccess = (reference) => {
-    alert(`Payment complete! ${parsedAmount} credits have been added to your account.`);
+    // 1. Tell App.jsx to fetch the new credit balance from the database
     if (onTopUpSuccess) onTopUpSuccess(); 
+    
+    // 2. Instantly close the modal to return the user to the main workspace
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 w-full max-w-md rounded-3xl p-6 shadow-2xl relative">
-        <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400">
+        <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 transition-colors">
           <X size={20} />
         </button>
         
@@ -62,9 +62,7 @@ export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUp
               step="5" 
               min="5" 
               value={creditAmount}
-              /* Allow free typing while they are in the box */
               onChange={(e) => setCreditAmount(e.target.value)}
-              /* Snap it to multiples of 5 ONLY when they click away (blur) */
               onBlur={(e) => {
                 let val = parseInt(e.target.value, 10);
                 if (isNaN(val) || val < 5) {
@@ -74,7 +72,7 @@ export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUp
                 }
                 setCreditAmount(val);
               }}
-              className="w-full text-center text-2xl font-black py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white"
+              className="w-full text-center text-2xl font-black py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white transition-all"
             />
           </div>
 
@@ -84,7 +82,7 @@ export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUp
           </div>
 
           <button 
-            onClick={() => initializePayment(handleSuccess, () => console.log('Payment closed'))}
+            onClick={() => initializePayment(handleSuccess, () => console.log('Payment window closed'))}
             disabled={parsedAmount < 5}
             className="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl shadow-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
           >
