@@ -51,7 +51,7 @@ export default function OwnerModal({ isOpen, onClose }) {
             <div className="flex-1 space-y-4">
               <div>
                 <h2 className="text-3xl font-extrabold text-white tracking-tight">Samuel Peprah</h2>
-                <p className="text-cyan-400 font-semibold text-sm mt-1">Founder & Lead Software Engineer, AtomDev Studios</p>
+                <p className="text-cyan-400 font-semibold text-sm mt-1">Founder & Lead Software/Web Application Developer, AtomDev Studios</p>
               </div>
               
               <div className="flex flex-wrap gap-2 justify-center md:justify-start">
