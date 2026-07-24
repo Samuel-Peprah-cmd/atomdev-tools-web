@@ -451,10 +451,10 @@ export default function App() {
                   )}
 
                   {msg.type === 'job_status' ? (
-                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 w-full max-w-md shadow-sm">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="font-semibold text-sm text-gray-800 dark:text-gray-200 capitalize">{msg.tool.replace(/_/g, ' ')}</span>
-                        <span className="text-xs capitalize font-medium text-gray-500 dark:text-gray-400">{msg.status}</span>
+                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 w-full max-w-[85%] sm:max-w-md shadow-sm min-w-0">
+                      <div className="flex items-center justify-between mb-3 gap-2">
+                        <span className="font-semibold text-sm text-gray-800 dark:text-gray-200 capitalize truncate">{msg.tool.replace(/_/g, ' ')}</span>
+                        <span className="text-xs capitalize font-medium text-gray-500 dark:text-gray-400 shrink-0">{msg.status}</span>
                       </div>
 
                       {msg.status === 'processing' || msg.status === 'pending' ? (
@@ -462,33 +462,33 @@ export default function App() {
                       ) : msg.status === 'done' ? (
                         <div className="space-y-3">
                           <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
-                            <CheckCircle2 size={16} />
-                            <span>Processing complete! Output saved to R2.</span>
+                            <CheckCircle2 size={16} className="shrink-0" />
+                            <span>Processing complete!</span>
                           </div>
                           {msg.downloadUrl && (
                             <button
                               onClick={() => handleForceDownload(msg.downloadUrl, msg.filename)}
-                              className="flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-medium transition-colors shadow-sm"
+                              className="flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-medium transition-colors shadow-sm min-w-0"
                             >
-                              <Download size={14} />
-                              <span>Download Output</span>
+                              <Download size={14} className="shrink-0" />
+                              <span className="truncate">Download Output</span>
                             </button>
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 p-3 rounded-xl text-xs font-medium">
-                          <AlertCircle size={16} />
-                          <span>Error: {msg.error}</span>
+                        <div className="flex items-start gap-2 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 p-3 rounded-xl text-xs font-medium min-w-0">
+                          <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                          <span className="break-words min-w-0">{msg.error}</span>
                         </div>
                       )}
                     </div>
                   ) : msg.type === 'note' ? (
-                    <div className="px-5 py-3.5 max-w-[80%] text-[15px] leading-relaxed rounded-2xl bg-amber-100/80 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800/50 rounded-tr-sm flex items-start gap-3 shadow-sm">
+                    <div className="px-5 py-3.5 max-w-[85%] sm:max-w-[80%] text-[15px] leading-relaxed rounded-2xl bg-amber-100/80 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800/50 rounded-tr-sm flex items-start gap-3 shadow-sm min-w-0">
                       <StickyNote size={18} className="shrink-0 mt-0.5 opacity-70" />
-                      <span>{msg.content}</span>
+                      <span className="break-words min-w-0 whitespace-pre-wrap">{msg.content}</span>
                     </div>
                   ) : (
-                    <div className="px-5 py-3.5 max-w-[80%] text-[15px] leading-relaxed rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-tr-sm">
+                    <div className="px-5 py-3.5 max-w-[85%] sm:max-w-[80%] text-[15px] leading-relaxed rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-tr-sm break-words min-w-0 whitespace-pre-wrap">
                       {msg.content}
                     </div>
                   )}
