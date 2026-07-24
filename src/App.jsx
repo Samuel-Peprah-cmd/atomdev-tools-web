@@ -427,13 +427,42 @@ export default function App() {
                   <span>Sign In</span>
                 </button>
               ) : (
-                <button
-                  onClick={() => supabase.auth.signOut()}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  <LogOut size={14} />
-                  <span>Sign Out</span>
-                </button>
+                <div className="relative group">
+                  <button className="flex items-center gap-2 p-1 pr-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+                    {/* Shows Google Avatar if available, otherwise a generic User icon */}
+                    {authSession.user.user_metadata?.avatar_url ? (
+                      <img 
+                        src={authSession.user.user_metadata.avatar_url} 
+                        alt="Profile" 
+                        className="w-7 h-7 rounded-full object-cover border border-gray-200 dark:border-gray-600"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                        <User size={14} />
+                      </div>
+                    )}
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 max-w-[100px] truncate">
+                      {authSession.user.user_metadata?.full_name || authSession.user.email.split('@')[0]}
+                    </span>
+                  </button>
+                  
+                  {/* Dropdown Menu (Hidden by default, shows on hover) */}
+                  <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="p-2 border-b border-gray-100 dark:border-gray-800">
+                      <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider px-2">Account</p>
+                      <p className="text-xs text-gray-800 dark:text-gray-200 truncate px-2 mt-1">{authSession.user.email}</p>
+                    </div>
+                    <div className="p-1">
+                      <button 
+                        onClick={() => supabase.auth.signOut()}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors text-left font-medium"
+                      >
+                        <LogOut size={14} />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
               <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 ml-2">
                 {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}

@@ -27,19 +27,23 @@ export default function OwnerModal({ isOpen, onClose }) {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 sm:p-6 transition-all duration-300">
-      <div className="bg-gradient-to-b from-slate-900 to-slate-950 text-white w-full max-w-3xl rounded-3xl border border-slate-800 shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-md p-0 sm:p-4 transition-all duration-300">
+      <div className="bg-gradient-to-b from-slate-900 to-slate-950 text-white w-full max-w-3xl rounded-t-3xl sm:rounded-3xl border border-slate-800 shadow-2xl flex flex-col h-[85dvh] sm:max-h-[90vh]">
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/80 bg-slate-900/80 shrink-0 rounded-t-3xl">
           <span className="text-xs font-bold tracking-widest text-cyan-400 uppercase">Developer & Studio Profile</span>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
+          <button 
+            onClick={onClose} 
+            className="p-2 -mr-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            aria-label="Close modal"
+          >
             <X size={20} />
           </button>
         </div>
 
         {/* Scrollable Content */}
-        <div className="p-6 md:p-8 overflow-y-auto space-y-8 custom-scrollbar">
+        <div className="p-6 md:p-8 overflow-y-auto space-y-8 custom-scrollbar flex-1 pb-12 sm:pb-8">
           
           {/* 1. Profile Header & Quote */}
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-left">
@@ -147,7 +151,7 @@ export default function OwnerModal({ isOpen, onClose }) {
         </div>
 
         {/* 5. Footer / Social Links */}
-        <div className="p-6 border-t border-slate-800 bg-slate-900/80 shrink-0 rounded-b-3xl">
+        <div className="p-6 border-t border-slate-800 bg-slate-900/80 shrink-0">
           <p className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider text-center sm:text-left">
             Connect
           </p>
