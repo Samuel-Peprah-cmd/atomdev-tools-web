@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Paperclip, Send, Sparkles, Download, Loader2, CheckCircle2, AlertCircle, MessageSquare, Menu, Moon, Sun, StickyNote, User, Pencil, Trash2, Clock } from 'lucide-react';
+import { Plus, Paperclip, Send, Sparkles, Download, Loader2, CheckCircle2, AlertCircle, MessageSquare, Menu, Moon, Sun, StickyNote, User, Pencil, Trash2, Clock, MoreVertical } from 'lucide-react';
 import { submitJob, pollJobStatus } from './api/client';
 import ToolModal from './components/ToolModal';
 import OwnerModal from './components/OwnerModal';
@@ -88,6 +88,7 @@ export default function App() {
   
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
+  const [openMenuId, setOpenMenuId] = useState(null);
   
   const messagesEndRef = useRef(null);
 
@@ -354,28 +355,54 @@ export default function App() {
                   ) : (
                     <>
                       <button 
-                        onClick={() => setActiveSessionId(session.id)} 
+                        onClick={() => {
+                          setActiveSessionId(session.id);
+                          setOpenMenuId(null); // Auto-close menu if open
+                        }} 
                         className="flex-1 flex items-center gap-3 truncate text-left min-w-0"
                       >
                         <MessageSquare size={16} className="shrink-0" />
                         <span className="truncate">{session.title}</span>
                       </button>
                       
-                      <div className="hidden group-hover:flex items-center gap-1.5 shrink-0 ml-2">
-                        <button 
-                          onClick={(e) => startEditing(e, session)} 
-                          className="p-1.5 rounded-md text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-indigo-500 transition-colors"
-                          title="Rename workspace"
+                      <div className="flex items-center shrink-0 ml-2">
+                        {/* Mobile Three-Dots Toggle */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(openMenuId === session.id ? null : session.id);
+                          }}
+                          className={`p-1.5 rounded-md text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors lg:hidden ${
+                            openMenuId === session.id ? 'hidden' : 'flex'
+                          }`}
+                          title="Options"
                         >
-                          <Pencil size={14} />
+                          <MoreVertical size={16} />
                         </button>
-                        <button 
-                          onClick={(e) => deleteSession(e, session.id)} 
-                          className="p-1.5 rounded-md text-gray-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500 transition-colors"
-                          title="Delete workspace"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+
+                        {/* Action Buttons (Edit/Delete) */}
+                        <div className={`items-center gap-1.5 ${openMenuId === session.id ? 'flex' : 'hidden lg:group-hover:flex'}`}>
+                          <button 
+                            onClick={(e) => { 
+                              startEditing(e, session); 
+                              setOpenMenuId(null); 
+                            }} 
+                            className="p-1.5 rounded-md text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-indigo-500 transition-colors"
+                            title="Rename workspace"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button 
+                            onClick={(e) => { 
+                              deleteSession(e, session.id); 
+                              setOpenMenuId(null); 
+                            }} 
+                            className="p-1.5 rounded-md text-gray-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500 transition-colors"
+                            title="Delete workspace"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     </>
                   )}
