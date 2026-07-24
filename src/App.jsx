@@ -275,8 +275,8 @@ export default function App() {
       // Pass the token to submitJob
       const { job_id } = await submitJob({ tool, file, files, url, options, token });
 
-      // Pass the token to pollJobStatus
-      await pollJobStatus(job_id, token, (statusUpdate) => {
+      // Pass the token to pollJobStatus as the THIRD argument
+      await pollJobStatus(job_id, (statusUpdate) => {
         updateMessages((prev) =>
           prev.map((msg) =>
             msg.id === jobMsgId
@@ -290,7 +290,7 @@ export default function App() {
               : msg
           )
         );
-      });
+      }, token);
     } catch (err) {
       updateMessages((prev) =>
         prev.map((msg) =>
