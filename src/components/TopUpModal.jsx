@@ -2,13 +2,12 @@ import React, { useState } from 'react';
 import { X, CreditCard, Sparkles } from 'lucide-react';
 import { usePaystackPayment } from 'react-paystack';
 
-export default function TopUpModal({ isOpen, onClose, userId, userEmail }) {
+export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUpSuccess }) {
   const [creditAmount, setCreditAmount] = useState(10);
   
   if (!isOpen) return null;
 
   // Pricing Logic: 10 credits = 5 GHS. Therefore 1 credit = 0.5 GHS.
-  // Paystack expects the amount in pesewas (multiply GHS by 100).
   const priceInGHS = creditAmount * 0.5;
   const amountInPesewas = priceInGHS * 100;
 
@@ -28,6 +27,7 @@ export default function TopUpModal({ isOpen, onClose, userId, userEmail }) {
 
   const handleSuccess = (reference) => {
     alert(`Payment complete! ${creditAmount} credits have been added to your account.`);
+    if (onTopUpSuccess) onTopUpSuccess(); // <-- Tells App.jsx to refresh the number
     onClose();
   };
 

@@ -4,9 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 import { submitJob, pollJobStatus } from './api/client';
 import ToolModal from './components/ToolModal';
 import OwnerModal from './components/OwnerModal';
-import TopUpModal from './components/TopUpModal'; // <-- NEW IMPORT
+import TopUpModal from './components/TopUpModal';
 
-// Initialize Supabase Client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -78,7 +77,6 @@ const ProcessingStage = () => {
 };
 
 export default function App() {
-  // Supabase Auth Session State
   const [authSession, setAuthSession] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [email, setEmail] = useState('');
@@ -86,32 +84,57 @@ export default function App() {
   const [authMode, setAuthMode] = useState('login'); 
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState(null);
+  
+  // <-- CREDITS STATE -->
+  const [credits, setCredits] = useState(null);
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [showDepletedModal, setShowDepletedModal] = useState(false);
+
   const [sessions, setSessions] = useState(getStoredSessions);
   const [activeSessionId, setActiveSessionId] = useState(sessions[0]?.id);
   const [inputText, setInputText] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
-  
-  // <-- NEW STATE FOR CREDITS -->
-  const [showTopUpModal, setShowTopUpModal] = useState(false);
-  const [showDepletedModal, setShowDepletedModal] = useState(false);
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => !isCompactViewport());
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  
   const messagesEndRef = useRef(null);
   const profileMenuRef = useRef(null);
   const [isDarkMode, setIsDarkMode] = useState(getInitialTheme);
 
+  // <-- FETCH CREDITS FUNCTION -->
+  const fetchUserCredits = async (userId) => {
+    if (!userId) return;
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('credits')
+        .eq('user_id', userId)
+        .single();
+      
+      if (data) setCredits(data.credits);
+      // If error (like PGRST116), they are a brand new user and the backend 
+      // hasn't generated their profile row yet. It will generate on first job run!
+    } catch (err) {
+      console.warn("Could not fetch credits:", err);
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setAuthSession(session);
+      if (session?.user?.id) fetchUserCredits(session.user.id);
     });
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setAuthSession(session);
+      if (session?.user?.id) fetchUserCredits(session.user.id);
+      else setCredits(null);
     });
+    
     return () => subscription.unsubscribe();
   }, []);
 
@@ -275,7 +298,7 @@ export default function App() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(blobUrl);
     } catch (e) {
-      console.warn("Blob download failed (CORS), falling back to new tab:", e);
+      console.warn("Blob download failed, falling back to new tab:", e);
       window.open(url, '_blank');
     }
   };
@@ -297,9 +320,16 @@ export default function App() {
       id: jobMsgId, role: 'assistant', type: 'job_status', status: 'pending',
       tool: tool, downloadUrl: null, error: null
     };
+    
     updateMessages((prev) => [...prev, userMessage, initialJobMessage]);
+    
     try {
       const { job_id } = await submitJob({ tool, file, files, url, options, token });
+      
+      // The backend deducts a credit instantly upon successful submission! 
+      // Fetch the updated number so the UI ticks down in real-time.
+      fetchUserCredits(authSession.user.id);
+      
       await pollJobStatus(job_id, token, (statusUpdate) => {
         updateMessages((prev) =>
           prev.map((msg) =>
@@ -316,7 +346,6 @@ export default function App() {
         );
       });
     } catch (err) {
-      // <-- CATCH 402 INSUFFICIENT CREDITS -->
       if (err.message.includes("Insufficient credits") || err.message.includes("402")) {
         setShowDepletedModal(true);
       }
@@ -404,7 +433,21 @@ export default function App() {
                 </div>
               ))}
             </div>
+
+            {/* --- BOTTOM SIDEBAR ACTIONS (Including the new Credit Badge) --- */}
             <div className="px-3 mt-auto pt-4 pb-2 border-t border-gray-300 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 shrink-0">
+              
+              {/* BEAUTIFUL CREDIT BADGE */}
+              {authSession && credits !== null && (
+                <div className="mb-3 p-3 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={16} className="text-emerald-500" />
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Compute Credits</span>
+                  </div>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{credits}</span>
+                </div>
+              )}
+
               <button onClick={() => setIsOwnerModalOpen(true)} className="w-full flex items-center gap-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 p-2.5 rounded-xl shadow-sm mb-3 transition-colors text-left group">
                 <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-800/50 transition-colors">
                   <User size={16} className="text-indigo-600 dark:text-indigo-400" />
@@ -647,6 +690,7 @@ export default function App() {
         onClose={() => setShowTopUpModal(false)} 
         userId={authSession?.user?.id}
         userEmail={authSession?.user?.email}
+        onTopUpSuccess={() => fetchUserCredits(authSession?.user?.id)}
       />
 
       <ToolModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmitJob={handleToolSubmit} />
