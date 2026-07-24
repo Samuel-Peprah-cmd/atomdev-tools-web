@@ -98,8 +98,10 @@ export default function App() {
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const messagesEndRef = useRef(null);
+  const profileMenuRef = useRef(null);
   const [isDarkMode, setIsDarkMode] = useState(getInitialTheme);
 
   // Monitor Supabase Auth state
@@ -139,6 +141,22 @@ export default function App() {
     desktopQuery.addEventListener('change', handleViewportChange);
     return () => desktopQuery.removeEventListener('change', handleViewportChange);
   }, []);
+
+  // Close the profile dropdown when tapping/clicking outside it
+  useEffect(() => {
+    if (!showProfileMenu) return;
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showProfileMenu]);
 
   const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
   const messages = activeSession?.messages || [];
@@ -427,8 +445,11 @@ export default function App() {
                   <span>Sign In</span>
                 </button>
               ) : (
-                <div className="relative group">
-                  <button className="flex items-center gap-2 p-1 pr-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+                <div className="relative" ref={profileMenuRef}>
+                  <button
+                    onClick={() => setShowProfileMenu((prev) => !prev)}
+                    className="flex items-center gap-2 p-1 pr-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                  >
                     {/* Shows Google Avatar if available, otherwise a generic User icon */}
                     {authSession.user.user_metadata?.avatar_url ? (
                       <img 
@@ -446,22 +467,27 @@ export default function App() {
                     </span>
                   </button>
                   
-                  {/* Dropdown Menu (Hidden by default, shows on hover) */}
-                  <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <div className="p-2 border-b border-gray-100 dark:border-gray-800">
-                      <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider px-2">Account</p>
-                      <p className="text-xs text-gray-800 dark:text-gray-200 truncate px-2 mt-1">{authSession.user.email}</p>
+                  {/* Dropdown Menu (toggled by click/tap, works on mobile) */}
+                  {showProfileMenu && (
+                    <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg z-50">
+                      <div className="p-2 border-b border-gray-100 dark:border-gray-800">
+                        <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider px-2">Account</p>
+                        <p className="text-xs text-gray-800 dark:text-gray-200 truncate px-2 mt-1">{authSession.user.email}</p>
+                      </div>
+                      <div className="p-1">
+                        <button 
+                          onClick={() => {
+                            supabase.auth.signOut();
+                            setShowProfileMenu(false);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors text-left font-medium"
+                        >
+                          <LogOut size={14} />
+                          Sign Out
+                        </button>
+                      </div>
                     </div>
-                    <div className="p-1">
-                      <button 
-                        onClick={() => supabase.auth.signOut()}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors text-left font-medium"
-                      >
-                        <LogOut size={14} />
-                        Sign Out
-                      </button>
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
               <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 ml-2">
