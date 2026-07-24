@@ -3,12 +3,16 @@ import { X, CreditCard, Sparkles } from 'lucide-react';
 import { usePaystackPayment } from 'react-paystack';
 
 export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUpSuccess }) {
+  // Start with 10 credits by default
   const [creditAmount, setCreditAmount] = useState(10);
   
   if (!isOpen) return null;
 
+  // We parse the amount safely so the app doesn't crash if the user temporarily deletes everything
+  const parsedAmount = parseInt(creditAmount, 10) || 0;
+
   // Pricing Logic: 10 credits = 5 GHS. Therefore 1 credit = 0.5 GHS.
-  const priceInGHS = creditAmount * 0.5;
+  const priceInGHS = parsedAmount * 0.5;
   const amountInPesewas = priceInGHS * 100;
 
   const config = {
@@ -19,15 +23,15 @@ export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUp
     publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY_ATOM, 
     metadata: {
       user_id: userId,
-      credits: creditAmount
+      credits: parsedAmount
     }
   };
 
   const initializePayment = usePaystackPayment(config);
 
   const handleSuccess = (reference) => {
-    alert(`Payment complete! ${creditAmount} credits have been added to your account.`);
-    if (onTopUpSuccess) onTopUpSuccess(); // <-- Tells App.jsx to refresh the number
+    alert(`Payment complete! ${parsedAmount} credits have been added to your account.`);
+    if (onTopUpSuccess) onTopUpSuccess(); 
     onClose();
   };
 
@@ -58,8 +62,16 @@ export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUp
               step="5" 
               min="5" 
               value={creditAmount}
-              onChange={(e) => {
-                const val = Math.max(5, Math.ceil(e.target.value / 5) * 5);
+              /* Allow free typing while they are in the box */
+              onChange={(e) => setCreditAmount(e.target.value)}
+              /* Snap it to multiples of 5 ONLY when they click away (blur) */
+              onBlur={(e) => {
+                let val = parseInt(e.target.value, 10);
+                if (isNaN(val) || val < 5) {
+                  val = 5;
+                } else {
+                  val = Math.ceil(val / 5) * 5;
+                }
                 setCreditAmount(val);
               }}
               className="w-full text-center text-2xl font-black py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none dark:text-white"
@@ -73,7 +85,8 @@ export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUp
 
           <button 
             onClick={() => initializePayment(handleSuccess, () => console.log('Payment closed'))}
-            className="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl shadow-lg hover:opacity-90 transition-all flex items-center justify-center gap-2"
+            disabled={parsedAmount < 5}
+            className="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl shadow-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
           >
             <CreditCard size={18} />
             Pay with Paystack
