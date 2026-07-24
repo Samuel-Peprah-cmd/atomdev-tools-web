@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Paperclip, Send, Sparkles, Download, Loader2, CheckCircle2, AlertCircle, MessageSquare, Menu, Moon, Sun, StickyNote, User, Pencil, Trash2, Clock, MoreVertical } from 'lucide-react';
-import { useAuth, SignInButton, UserButton, SignedIn, SignedOut } from '@clerk/clerk-react';
+import { Plus, Paperclip, Send, Sparkles, Download, Loader2, CheckCircle2, AlertCircle, MessageSquare, Menu, Moon, Sun, StickyNote, User, Pencil, Trash2, Clock, MoreVertical, LogIn, LogOut, X } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
 import { submitJob, pollJobStatus } from './api/client';
 import ToolModal from './components/ToolModal';
 import OwnerModal from './components/OwnerModal';
+
+// Initialize Supabase Client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const DEFAULT_SESSION_TITLE = 'New Workspace';
 
@@ -17,20 +22,16 @@ const getStoredSessions = () => {
   try {
     const saved = localStorage.getItem('atomdev-sessions');
     const parsed = saved ? JSON.parse(saved) : null;
-
     if (Array.isArray(parsed) && parsed.length > 0) {
       return parsed.map((session) => ({
         id: session?.id ? String(session.id) : createSession().id,
-        title: typeof session?.title === 'string' && session.title.trim()
-          ? session.title
-          : DEFAULT_SESSION_TITLE,
+        title: typeof session?.title === 'string' && session.title.trim() ? session.title : DEFAULT_SESSION_TITLE,
         messages: Array.isArray(session?.messages) ? session.messages : [],
       }));
     }
   } catch (error) {
     console.warn('Unable to restore saved workspaces.', error);
   }
-
   return [createSession()];
 };
 
@@ -39,9 +40,8 @@ const getInitialTheme = () => {
     const saved = localStorage.getItem('atomdev-theme');
     if (saved === 'dark' || saved === 'light') return saved === 'dark';
   } catch (error) {
-    console.warn('Unable to restore the saved theme.', error);
+    console.warn('Unable to restore saved theme.', error);
   }
-
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
 };
 
@@ -79,8 +79,14 @@ const ProcessingStage = () => {
 };
 
 export default function App() {
-  // --- CLERK AUTHENTICATION ---
-  const { getToken, isSignedIn } = useAuth();
+  // Supabase Auth Session State
+  const [authSession, setAuthSession] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState(null);
 
   const [sessions, setSessions] = useState(getStoredSessions);
   const [activeSessionId, setActiveSessionId] = useState(sessions[0]?.id);
@@ -88,23 +94,34 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => !isCompactViewport());
-  
+
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
-  
-  const messagesEndRef = useRef(null);
 
+  const messagesEndRef = useRef(null);
   const [isDarkMode, setIsDarkMode] = useState(getInitialTheme);
+
+  // Monitor Supabase Auth state
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthSession(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
     document.documentElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
-
     try {
       localStorage.setItem('atomdev-theme', isDarkMode ? 'dark' : 'light');
     } catch (error) {
-      console.warn('Unable to save the selected theme.', error);
+      console.warn('Unable to save selected theme.', error);
     }
   }, [isDarkMode]);
 
@@ -119,7 +136,6 @@ export default function App() {
   useEffect(() => {
     const desktopQuery = window.matchMedia('(min-width: 768px)');
     const handleViewportChange = (event) => setIsSidebarOpen(event.matches);
-
     desktopQuery.addEventListener('change', handleViewportChange);
     return () => desktopQuery.removeEventListener('change', handleViewportChange);
   }, []);
@@ -137,7 +153,7 @@ export default function App() {
         const newMessages = typeof updater === 'function' ? updater(session.messages) : updater;
         let title = session.title;
         if (session.messages.length === 0 && newMessages.length > 0 && session.title === DEFAULT_SESSION_TITLE) {
-           title = newMessages[0].content.substring(0, 25) + "...";
+          title = newMessages[0].content.substring(0, 25) + "...";
         }
         return { ...session, messages: newMessages, title };
       }
@@ -157,11 +173,9 @@ export default function App() {
     setSessions((currentSessions) => {
       const updatedSessions = currentSessions.filter((session) => session.id !== id);
       const nextSessions = updatedSessions.length > 0 ? updatedSessions : [createSession()];
-
       setActiveSessionId((currentActiveId) => (
         currentActiveId === id ? nextSessions[0].id : currentActiveId
       ));
-
       return nextSessions;
     });
     if (editingSessionId === id) setEditingSessionId(null);
@@ -185,14 +199,28 @@ export default function App() {
     setEditingSessionId(null);
   };
 
-  const cancelEdit = () => {
-    setEditingSessionId(null);
-    setEditTitle('');
-  };
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError(null);
 
-  const selectSession = (id) => {
-    setActiveSessionId(id);
-    if (isCompactViewport()) setIsSidebarOpen(false);
+    try {
+      if (authMode === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        alert("Registration successful! Check your email to confirm your account.");
+      }
+      setShowAuthModal(false);
+      setEmail('');
+      setPassword('');
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const handleTextSubmit = (e) => {
@@ -205,11 +233,11 @@ export default function App() {
       handleToolSubmit({ tool: 'download_video', url: inputText.trim(), options: {} });
     } else {
       const userMsgId = Date.now().toString();
-      updateMessages(prev => [...prev, { 
-        id: userMsgId, 
-        role: 'user', 
-        type: 'note', 
-        content: inputText.trim() 
+      updateMessages(prev => [...prev, {
+        id: userMsgId,
+        role: 'user',
+        type: 'note',
+        content: inputText.trim()
       }]);
     }
     setInputText('');
@@ -221,7 +249,7 @@ export default function App() {
       if (!response.ok) throw new Error('Network response failed');
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
-      
+
       const a = document.createElement('a');
       a.href = blobUrl;
       a.download = filename || 'AtomDev_Output';
@@ -236,14 +264,12 @@ export default function App() {
   };
 
   const handleToolSubmit = async ({ tool, file, files, url, options }) => {
-    // --- VERIFY AUTH BEFORE SUBMITTING ---
-    if (!isSignedIn) {
-      alert("You must be signed in to use AtomDev AI tools.");
+    if (!authSession) {
+      setShowAuthModal(true);
       return;
     }
 
-    const token = await getToken();
-
+    const token = authSession.access_token;
     const userMsgId = Date.now().toString();
     const jobMsgId = (Date.now() + 1).toString();
 
@@ -252,51 +278,35 @@ export default function App() {
     else if (file) contentStr = `[File]: ${file.name} -> ${tool}`;
     else contentStr = `[URL]: ${url} -> ${tool}`;
 
-    const userMessage = {
-      id: userMsgId,
-      role: 'user',
-      type: 'command',
-      content: contentStr,
-    };
-
+    const userMessage = { id: userMsgId, role: 'user', type: 'command', content: contentStr };
     const initialJobMessage = {
-      id: jobMsgId,
-      role: 'assistant',
-      type: 'job_status',
-      status: 'pending',
-      tool: tool,
-      downloadUrl: null,
-      error: null
+      id: jobMsgId, role: 'assistant', type: 'job_status', status: 'pending',
+      tool: tool, downloadUrl: null, error: null
     };
 
     updateMessages((prev) => [...prev, userMessage, initialJobMessage]);
 
     try {
-      // Pass the token to submitJob
       const { job_id } = await submitJob({ tool, file, files, url, options, token });
-
-      // Pass the token to pollJobStatus as the THIRD argument
-      await pollJobStatus(job_id, (statusUpdate) => {
+      await pollJobStatus(job_id, token, (statusUpdate) => {
         updateMessages((prev) =>
           prev.map((msg) =>
             msg.id === jobMsgId
               ? {
-                  ...msg,
-                  status: statusUpdate.status,
-                  downloadUrl: statusUpdate.download_url,
-                  filename: statusUpdate.filename,
-                  error: statusUpdate.error
-                }
+                ...msg,
+                status: statusUpdate.status,
+                downloadUrl: statusUpdate.download_url,
+                filename: statusUpdate.filename,
+                error: statusUpdate.error
+              }
               : msg
           )
         );
-      }, token);
+      });
     } catch (err) {
       updateMessages((prev) =>
         prev.map((msg) =>
-          msg.id === jobMsgId
-            ? { ...msg, status: 'failed', error: err.message }
-            : msg
+          msg.id === jobMsgId ? { ...msg, status: 'failed', error: err.message } : msg
         )
       );
     }
@@ -305,7 +315,7 @@ export default function App() {
   return (
     <div className="h-[100dvh] w-full overflow-hidden">
       <div className="relative flex h-full w-full overflow-hidden bg-gray-50 font-sans text-gray-800 transition-colors duration-300 dark:bg-gray-950 dark:text-gray-200">
-        
+
         {/* RETRACTABLE SIDEBAR */}
         {isSidebarOpen && (
           <button
@@ -325,7 +335,7 @@ export default function App() {
         >
           <div className="flex h-full w-[min(19rem,calc(100vw-2.5rem))] flex-col md:w-64">
             <div className="p-3">
-              <button 
+              <button
                 onClick={createNewSession}
                 className="flex items-center justify-center gap-2 w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100 px-4 py-3 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 font-medium transition-all"
               >
@@ -333,16 +343,15 @@ export default function App() {
                 <span>New Session</span>
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto min-h-0 mt-2 space-y-1 px-3 custom-scrollbar">
               <p className="text-xs font-bold tracking-wider text-gray-400 dark:text-gray-500 px-1 mb-3 uppercase">Workspace History</p>
-              
               {sessions.map(session => (
-                <div 
-                  key={session.id} 
+                <div
+                  key={session.id}
                   className={`group relative flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                    activeSessionId === session.id 
-                      ? 'bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-gray-200 dark:border-gray-700 font-medium' 
+                    activeSessionId === session.id
+                      ? 'bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm border border-gray-200 dark:border-gray-700 font-medium'
                       : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-800/50 hover:text-gray-700 dark:hover:text-gray-200'
                   }`}
                 >
@@ -350,64 +359,30 @@ export default function App() {
                     <form onSubmit={saveEdit} className="flex-1 flex items-center min-w-0">
                       <MessageSquare size={16} className="shrink-0 mr-3 text-indigo-500" />
                       <input
-                        autoFocus
-                        type="text"
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        onBlur={saveEdit}
+                        autoFocus type="text" value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)} onBlur={saveEdit}
                         className="flex-1 bg-transparent border-b border-indigo-500 focus:outline-none px-1 py-0.5 min-w-0 text-gray-800 dark:text-gray-200 text-[16px] md:text-sm"
                       />
                     </form>
                   ) : (
                     <>
-                      <button 
-                        onClick={() => {
-                          setActiveSessionId(session.id);
-                          setOpenMenuId(null); // Auto-close menu if open
-                        }} 
+                      <button
+                        onClick={() => { setActiveSessionId(session.id); setOpenMenuId(null); }}
                         className="flex-1 flex items-center gap-3 truncate text-left min-w-0"
                       >
                         <MessageSquare size={16} className="shrink-0" />
                         <span className="truncate">{session.title}</span>
                       </button>
-                      
                       <div className="flex items-center shrink-0 ml-2">
-                        {/* Mobile Three-Dots Toggle */}
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(openMenuId === session.id ? null : session.id);
-                          }}
-                          className={`p-1.5 rounded-md text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors lg:hidden ${
-                            openMenuId === session.id ? 'hidden' : 'flex'
-                          }`}
-                          title="Options"
+                          onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === session.id ? null : session.id); }}
+                          className={`p-1.5 rounded-md text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors lg:hidden ${openMenuId === session.id ? 'hidden' : 'flex'}`}
                         >
                           <MoreVertical size={16} />
                         </button>
-
-                        {/* Action Buttons (Edit/Delete) */}
                         <div className={`items-center gap-1.5 ${openMenuId === session.id ? 'flex' : 'hidden lg:group-hover:flex'}`}>
-                          <button 
-                            onClick={(e) => { 
-                              startEditing(e, session); 
-                              setOpenMenuId(null); 
-                            }} 
-                            className="p-1.5 rounded-md text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-indigo-500 transition-colors"
-                            title="Rename workspace"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button 
-                            onClick={(e) => { 
-                              deleteSession(e, session.id); 
-                              setOpenMenuId(null); 
-                            }} 
-                            className="p-1.5 rounded-md text-gray-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500 transition-colors"
-                            title="Delete workspace"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <button onClick={(e) => { startEditing(e, session); setOpenMenuId(null); }} className="p-1.5 rounded-md text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-indigo-500 transition-colors"><Pencil size={14} /></button>
+                          <button onClick={(e) => { deleteSession(e, session.id); setOpenMenuId(null); }} className="p-1.5 rounded-md text-gray-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-500 transition-colors"><Trash2 size={14} /></button>
                         </div>
                       </div>
                     </>
@@ -416,12 +391,8 @@ export default function App() {
               ))}
             </div>
 
-            {/* CLICKABLE OWNER MODAL TRIGGER */}
             <div className="px-3 mt-auto pt-4 pb-2 border-t border-gray-300 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 shrink-0">
-              <button 
-                onClick={() => setIsOwnerModalOpen(true)}
-                className="w-full flex items-center gap-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 p-2.5 rounded-xl shadow-sm mb-3 transition-colors text-left group"
-              >
+              <button onClick={() => setIsOwnerModalOpen(true)} className="w-full flex items-center gap-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 p-2.5 rounded-xl shadow-sm mb-3 transition-colors text-left group">
                 <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-800/50 transition-colors">
                   <User size={16} className="text-indigo-600 dark:text-indigo-400" />
                 </div>
@@ -434,40 +405,37 @@ export default function App() {
                 AtomDev Tools v0.8.8
               </p>
             </div>
-
           </div>
         </aside>
 
         {/* MAIN AREA */}
         <div className="flex-1 flex flex-col relative h-full min-w-0">
-          
           <header className="h-14 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-10 shrink-0">
             <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400"
-              >
+              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400">
                 <Menu size={20} />
               </button>
               <span className="font-semibold text-gray-800 dark:text-gray-200 tracking-tight">AtomDev Workspace</span>
             </div>
-            
             <div className="flex items-center gap-2">
-              <SignedOut>
-                <SignInButton mode="modal">
-                  <button className="px-4 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
-                    Sign In
-                  </button>
-                </SignInButton>
-              </SignedOut>
-              <SignedIn>
-                <div className="pt-1.5"><UserButton /></div>
-              </SignedIn>
-              
-              <button 
-                onClick={() => setIsDarkMode(!isDarkMode)} 
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 ml-2"
-              >
+              {!authSession ? (
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                >
+                  <LogIn size={16} />
+                  <span>Sign In</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <LogOut size={14} />
+                  <span>Sign Out</span>
+                </button>
+              )}
+              <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 ml-2">
                 {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
               </button>
             </div>
@@ -475,7 +443,6 @@ export default function App() {
 
           <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-48">
             <div className="max-w-3xl mx-auto space-y-6">
-              
               {messages.length === 0 && (
                 <div className="flex flex-col items-center justify-center text-center mt-20">
                   <div className="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/20">
@@ -487,23 +454,19 @@ export default function App() {
                   </p>
                 </div>
               )}
-
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  
                   {msg.role === 'assistant' && (
                     <div className="w-8 h-8 shrink-0 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-full flex items-center justify-center shadow-sm">
                       <Sparkles size={14} className="text-white" />
                     </div>
                   )}
-
                   {msg.type === 'job_status' ? (
                     <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 w-full max-w-[85%] sm:max-w-md shadow-sm min-w-0">
                       <div className="flex items-center justify-between mb-3 gap-2">
                         <span className="font-semibold text-sm text-gray-800 dark:text-gray-200 capitalize truncate">{msg.tool.replace(/_/g, ' ')}</span>
                         <span className="text-xs capitalize font-medium text-gray-500 dark:text-gray-400 shrink-0">{msg.status}</span>
                       </div>
-
                       {msg.status === 'processing' || msg.status === 'pending' ? (
                         <ProcessingStage />
                       ) : msg.status === 'done' ? (
@@ -513,10 +476,7 @@ export default function App() {
                             <span>Processing complete!</span>
                           </div>
                           {msg.downloadUrl && (
-                            <button
-                              onClick={() => handleForceDownload(msg.downloadUrl, msg.filename)}
-                              className="flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-medium transition-colors shadow-sm min-w-0"
-                            >
+                            <button onClick={() => handleForceDownload(msg.downloadUrl, msg.filename)} className="flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-medium transition-colors shadow-sm min-w-0">
                               <Download size={14} className="shrink-0" />
                               <span className="truncate">Download Output</span>
                             </button>
@@ -541,61 +501,87 @@ export default function App() {
                   )}
                 </div>
               ))}
-              
               <div ref={messagesEndRef} className="h-4 w-full" />
             </div>
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent dark:from-gray-950 dark:via-gray-950 p-4 md:p-6 pt-20 pointer-events-none">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-t from-gray-50 via-gray-50 to-transparent dark:from-gray-950 dark:via-gray-950 p-4 md:p-6 pt-20 pointer-events-none">
             <div className="max-w-3xl mx-auto pointer-events-auto">
-              <form 
-                onSubmit={handleTextSubmit}
-                className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-xl flex items-center p-2 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all"
-              >
-                <button 
-                  type="button"
-                  onClick={() => setIsModalOpen(true)}
-                  className="p-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
-                  title="Open AtomDev Tool Picker"
-                >
+              <form onSubmit={handleTextSubmit} className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-xl flex items-center p-2 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
+                <button type="button" onClick={() => setIsModalOpen(true)} className="p-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors" title="Open AtomDev Tool Picker">
                   <Paperclip size={20} />
                 </button>
-                <input
-                  type="text"
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Paste a link to auto-download, or type a note to save..."
-                  className="flex-1 bg-transparent border-none focus:outline-none px-3 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                />
-                <button 
-                  type="submit"
-                  disabled={!inputText.trim()}
-                  className={`p-2.5 rounded-xl transition-colors ${
-                    inputText.trim() 
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm' 
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600'
-                  }`}
-                >
+                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Paste a link to auto-download, or type a note to save..." className="flex-1 bg-transparent border-none focus:outline-none px-3 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500" />
+                <button type="submit" disabled={!inputText.trim()} className={`p-2.5 rounded-xl transition-colors ${inputText.trim() ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600'}`}>
                   <Send size={18} />
                 </button>
               </form>
             </div>
           </div>
         </div>
-
       </div>
 
-      <ToolModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmitJob={handleToolSubmit}
-      />
-      
-      {/* OWNER MODAL */}
-      <OwnerModal 
-        isOpen={isOwnerModalOpen} 
-        onClose={() => setIsOwnerModalOpen(false)} 
-      />
+      {/* SUPABASE AUTH MODAL */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+            <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+              <X size={20} />
+            </button>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              {authMode === 'login' ? 'Sign In to AtomDev' : 'Create Account'}
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
+              Sign in to execute high-performance AI tools and track job history.
+            </p>
+
+            {authError && (
+              <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-600 dark:text-rose-400 text-xs">
+                {authError}
+              </div>
+            )}
+
+            <form onSubmit={handleAuthSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                <input
+                  type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                <input
+                  type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+
+              <button
+                type="submit" disabled={authLoading}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+              >
+                {authLoading && <Loader2 size={16} className="animate-spin" />}
+                <span>{authMode === 'login' ? 'Sign In' : 'Create Account'}</span>
+              </button>
+            </form>
+
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                {authMode === 'login' ? "Don't have an account? Register" : "Already have an account? Sign In"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ToolModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmitJob={handleToolSubmit} />
+      <OwnerModal isOpen={isOwnerModalOpen} onClose={() => setIsOwnerModalOpen(false)} />
     </div>
   );
 }
