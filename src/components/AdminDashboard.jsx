@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Ticket, Users, BarChart, Activity, ShieldAlert, Plus, Loader2, X, Edit2, Save, Database, Cpu } from 'lucide-react';
+import { Ticket, Users, BarChart, Activity, ShieldAlert, Plus, Loader2, X, Edit2, Save, Database, Cpu, Trash2, DollarSign } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function AdminDashboard({ isOpen, onClose, authSession }) {
   const [activeTab, setActiveTab] = useState('finance'); 
@@ -10,6 +11,9 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
   const [daysValid, setDaysValid] = useState(7);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponMessage, setCouponMessage] = useState(null);
+  
+  const [couponsList, setCouponsList] = useState([]);
+  const [couponsListLoading, setCouponsListLoading] = useState(false);
 
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -23,6 +27,7 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
   // --- FETCH ROUTING ---
   useEffect(() => {
     if (isOpen && activeTab === 'users' && authSession) fetchUsers();
+    if (isOpen && activeTab === 'coupons' && authSession) fetchCoupons();
     if (isOpen && (activeTab === 'finance' || activeTab === 'logs') && authSession && !stats) fetchStats();
   }, [isOpen, activeTab, authSession]);
 
@@ -30,10 +35,7 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
     setUsersLoading(true);
     try {
       const response = await fetch(`${import.meta.env.VITE_HEAVY_API_URL}/atomdev-api/admin/users`, {
-        headers: {
-          'X-API-Key': import.meta.env.VITE_ATOMDEV_API_KEY,
-          'Authorization': `Bearer ${authSession.access_token}`
-        }
+        headers: { 'X-API-Key': import.meta.env.VITE_ATOMDEV_API_KEY, 'Authorization': `Bearer ${authSession.access_token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch users');
       setUsers(await response.json());
@@ -48,10 +50,7 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
     setStatsLoading(true);
     try {
       const response = await fetch(`${import.meta.env.VITE_HEAVY_API_URL}/atomdev-api/admin/stats`, {
-        headers: {
-          'X-API-Key': import.meta.env.VITE_ATOMDEV_API_KEY,
-          'Authorization': `Bearer ${authSession.access_token}`
-        }
+        headers: { 'X-API-Key': import.meta.env.VITE_ATOMDEV_API_KEY, 'Authorization': `Bearer ${authSession.access_token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch stats');
       setStats(await response.json());
@@ -59,6 +58,21 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
       console.error(err);
     } finally {
       setStatsLoading(false);
+    }
+  };
+
+  const fetchCoupons = async () => {
+    setCouponsListLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_HEAVY_API_URL}/atomdev-api/admin/coupons`, {
+        headers: { 'X-API-Key': import.meta.env.VITE_ATOMDEV_API_KEY, 'Authorization': `Bearer ${authSession.access_token}` }
+      });
+      if (!response.ok) throw new Error('Failed to fetch coupons');
+      setCouponsList(await response.json());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCouponsListLoading(false);
     }
   };
 
@@ -92,10 +106,24 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
 
       setCouponMessage({ type: 'success', text: `Success! Coupon ${couponCode} created.` });
       setCouponCode('');
+      fetchCoupons(); // Refresh the list
     } catch (err) {
       setCouponMessage({ type: 'error', text: err.message });
     } finally {
       setCouponLoading(false);
+    }
+  };
+
+  const handleRevokeCoupon = async (code) => {
+    if (!window.confirm(`Are you sure you want to revoke ${code}?`)) return;
+    try {
+      await fetch(`${import.meta.env.VITE_HEAVY_API_URL}/atomdev-api/admin/coupons/${code}`, {
+        method: 'DELETE',
+        headers: { 'X-API-Key': import.meta.env.VITE_ATOMDEV_API_KEY, 'Authorization': `Bearer ${authSession.access_token}` }
+      });
+      fetchCoupons();
+    } catch (err) {
+      alert("Failed to delete coupon");
     }
   };
 
@@ -125,16 +153,18 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
 
   if (!isOpen) return null;
 
+  const now = new Date();
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 transition-all duration-300">
-      <div className="bg-slate-950 border border-slate-800 w-full max-w-6xl h-[95vh] sm:h-[90vh] rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col md:flex-row overflow-hidden relative">
+    // FIX: Removed padding on mobile (p-0) so the modal consumes 100dvh (Dynamic Viewport Height) natively without browser bar conflicts.
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-0 sm:p-4 transition-all duration-300">
+      <div className="bg-slate-950 border-0 sm:border border-slate-800 w-full max-w-6xl h-[100dvh] sm:h-[90vh] rounded-none sm:rounded-3xl shadow-2xl flex flex-col md:flex-row overflow-hidden relative">
         
-        {/* Close Button */}
         <button onClick={onClose} className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-full bg-slate-900 border border-slate-700 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors z-30">
           <X size={20} />
         </button>
 
-        {/* Responsive Sidebar / Tab Bar */}
+        {/* Responsive Sidebar */}
         <aside className="w-full md:w-72 bg-slate-900/50 border-b md:border-b-0 md:border-r border-slate-800 p-4 sm:p-6 md:p-8 flex flex-row md:flex-col gap-2 shrink-0 overflow-x-auto custom-scrollbar">
           <div className="hidden md:flex items-center gap-3 mb-10 text-cyan-400">
             <ShieldAlert size={32} />
@@ -156,11 +186,11 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-4 sm:p-8 md:p-10 overflow-y-auto custom-scrollbar relative">
+        <main className="flex-1 p-4 sm:p-8 md:p-10 overflow-y-auto custom-scrollbar relative pb-24">
           
           {/* --- COMMAND CENTER (FINANCE) --- */}
           {activeTab === 'finance' && (
-            <div>
+            <div className="animate-fade-in">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
                 <div>
                   <h1 className="text-2xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">Command Center</h1>
@@ -174,34 +204,60 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
               {statsLoading && !stats ? (
                 <div className="flex justify-center mt-20 text-cyan-500"><Loader2 className="animate-spin" size={32} /></div>
               ) : stats ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                  <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl flex items-center gap-4 sm:gap-6">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30">
-                      <Users size={24} />
+                <div className="space-y-6">
+                  {/* Stats Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                    <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl flex items-center gap-4 sm:gap-6">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                        <DollarSign size={24} />
+                      </div>
+                      <div>
+                        <p className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Total Revenue</p>
+                        <h3 className="text-2xl sm:text-3xl font-black text-white">GH₵ {stats.total_revenue.toFixed(2)}</h3>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Total Users</p>
-                      <h3 className="text-2xl sm:text-3xl font-black text-white">{stats.total_users}</h3>
+                    <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl flex items-center gap-4 sm:gap-6">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30">
+                        <Users size={24} />
+                      </div>
+                      <div>
+                        <p className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Registered Users</p>
+                        <h3 className="text-2xl sm:text-3xl font-black text-white">{stats.total_users}</h3>
+                      </div>
+                    </div>
+                    <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl flex items-center gap-4 sm:gap-6">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/30">
+                        <Cpu size={24} />
+                      </div>
+                      <div>
+                        <p className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Total Jobs Run</p>
+                        <h3 className="text-2xl sm:text-3xl font-black text-white">{stats.total_jobs}</h3>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl flex items-center gap-4 sm:gap-6">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
-                      <Cpu size={24} />
-                    </div>
-                    <div>
-                      <p className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Total Jobs Run</p>
-                      <h3 className="text-2xl sm:text-3xl font-black text-white">{stats.total_jobs}</h3>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl flex items-center gap-4 sm:gap-6">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/30">
-                      <Database size={24} />
-                    </div>
-                    <div>
-                      <p className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Credits in Wild</p>
-                      <h3 className="text-2xl sm:text-3xl font-black text-white">{stats.total_credits_in_circulation}</h3>
+                  {/* Revenue Chart */}
+                  <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl mt-6">
+                    <h3 className="text-lg font-bold text-white mb-6">Revenue Timeline (GHS)</h3>
+                    <div className="h-72 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={stats.chart_data}>
+                          <defs>
+                            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                              <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                          <XAxis dataKey="date" stroke="#64748b" tick={{fill: '#64748b', fontSize: 12}} tickLine={false} axisLine={false} />
+                          <YAxis stroke="#64748b" tick={{fill: '#64748b', fontSize: 12}} tickLine={false} axisLine={false} tickFormatter={(value) => `GH₵${value}`} />
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: '#020617', borderColor: '#1e293b', borderRadius: '12px', color: '#f8fafc' }}
+                            itemStyle={{ color: '#10b981', fontWeight: 'bold' }}
+                          />
+                          <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
                     </div>
                   </div>
                 </div>
@@ -211,7 +267,7 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
 
           {/* --- SYSTEM LOGS --- */}
           {activeTab === 'logs' && (
-            <div>
+            <div className="animate-fade-in">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
                 <div>
                   <h1 className="text-2xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">System Logs</h1>
@@ -257,7 +313,7 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
 
           {/* --- USERS TAB --- */}
           {activeTab === 'users' && (
-            <div className="w-full">
+            <div className="w-full animate-fade-in">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
                 <div>
                   <h1 className="text-2xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">User Management</h1>
@@ -315,15 +371,16 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
             </div>
           )}
 
-          {/* --- COUPONS TAB --- */}
+          {/* --- PROMO ENGINE (COUPONS TAB) --- */}
           {activeTab === 'coupons' && (
-            <div className="max-w-2xl mt-4">
-              <h1 className="text-2xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">Coupon Generator</h1>
-              <p className="text-slate-400 mb-8 sm:mb-10 text-xs sm:text-sm">Issue highly secure promotional codes to grant compute credits to users.</p>
+            <div className="w-full animate-fade-in">
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">Promo Engine</h1>
+              <p className="text-slate-400 mb-8 sm:mb-10 text-xs sm:text-sm">Issue and manage secure promotional codes for compute credits.</p>
 
-              <form onSubmit={handleCreateCoupon} className="bg-slate-900/80 border border-slate-800 rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
+              {/* Form Section */}
+              <form onSubmit={handleCreateCoupon} className="bg-slate-900/80 border border-slate-800 rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl mb-10 max-w-3xl">
                 {couponMessage && (
-                  <div className={`p-4 rounded-xl text-sm font-semibold border ${couponMessage.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}>
+                  <div className={`p-4 rounded-xl text-sm font-semibold border flex items-center gap-2 ${couponMessage.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}>
                     {couponMessage.text}
                   </div>
                 )}
@@ -351,6 +408,53 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
                   {couponLoading ? <Loader2 className="animate-spin" size={20} /> : <><Plus size={20} /> Deploy Coupon</>}
                 </button>
               </form>
+
+              {/* Active Coupons List */}
+              <h3 className="text-xl font-bold text-white mb-4">Active Campaigns</h3>
+              {couponsListLoading ? (
+                <div className="flex justify-center py-10 text-cyan-500"><Loader2 className="animate-spin" size={24} /></div>
+              ) : (
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-x-auto shadow-xl custom-scrollbar">
+                  <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead className="bg-slate-950/50 text-slate-400 uppercase tracking-wider text-[10px] font-bold border-b border-slate-800">
+                      <tr>
+                        <th className="px-6 py-4">Promo Code</th>
+                        <th className="px-6 py-4">Value</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4">Expires</th>
+                        <th className="px-6 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50">
+                      {couponsList.map(coupon => {
+                        const isExpired = new Date(coupon.expires_at) <= now;
+                        return (
+                          <tr key={coupon.id} className={`hover:bg-slate-800/20 transition-colors ${isExpired ? 'opacity-50' : ''}`}>
+                            <td className="px-6 py-4 font-mono font-bold text-slate-200">{coupon.code}</td>
+                            <td className="px-6 py-4 text-cyan-400 font-bold">+{coupon.credits_amount}</td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${isExpired ? 'bg-slate-800 text-slate-500' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                {isExpired ? 'Expired' : 'Active'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-slate-400 text-xs">{new Date(coupon.expires_at).toLocaleDateString()}</td>
+                            <td className="px-6 py-4 text-right">
+                              <button onClick={() => handleRevokeCoupon(coupon.code)} className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors inline-flex" title="Delete Promo">
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                      {couponsList.length === 0 && (
+                        <tr>
+                          <td colSpan="5" className="px-6 py-8 text-center text-slate-500 text-sm">No promotional codes found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </main>
