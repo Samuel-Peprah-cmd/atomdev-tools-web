@@ -617,90 +617,93 @@ export default function App() {
           </header>
 
           {/* MAIN CHAT FEED CONTAINER */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-48 flex flex-col">
-            <div className="max-w-3xl mx-auto w-full space-y-6 flex-1">
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col relative custom-scrollbar">
+            <div className="max-w-3xl mx-auto w-full flex flex-col flex-1">
               
-              {messages.length === 0 && (
-                <div className="flex flex-col items-center justify-center text-center mt-20">
-                  <div className="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/20">
-                    <Sparkles size={32} className="text-white" />
+              {/* MESSAGES WRAPPER */}
+              <div className="flex-1 space-y-6">
+                {messages.length === 0 && (
+                  <div className="flex flex-col items-center justify-center text-center mt-20">
+                    <div className="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/20">
+                      <Sparkles size={32} className="text-white" />
+                    </div>
+                    <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-2">AtomDev Tools</h1>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm max-w-md">
+                      Paste a URL to auto-download, type a note to save it, or click the paperclip for heavy transcription & document tools.
+                    </p>
                   </div>
-                  <h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-2">AtomDev Tools</h1>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm max-w-md">
-                    Paste a URL to auto-download, type a note to save it, or click the paperclip for heavy transcription & document tools.
-                  </p>
-                </div>
-              )}
+                )}
 
-              {messages.map((msg) => (
-                <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {msg.role === 'assistant' && (
-                    <div className="w-8 h-8 shrink-0 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-full flex items-center justify-center shadow-sm">
-                      <Sparkles size={14} className="text-white" />
-                    </div>
-                  )}
-                  {msg.type === 'job_status' ? (
-                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 w-full max-w-[85%] sm:max-w-md shadow-sm min-w-0">
-                      <div className="flex items-center justify-between mb-3 gap-2">
-                        <span className="font-semibold text-sm text-gray-800 dark:text-gray-200 capitalize truncate">{msg.tool.replace(/_/g, ' ')}</span>
-                        <span className="text-xs capitalize font-medium text-gray-500 dark:text-gray-400 shrink-0">{msg.status}</span>
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    {msg.role === 'assistant' && (
+                      <div className="w-8 h-8 shrink-0 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-full flex items-center justify-center shadow-sm">
+                        <Sparkles size={14} className="text-white" />
                       </div>
+                    )}
+                    {msg.type === 'job_status' ? (
+                      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 w-full max-w-[85%] sm:max-w-md shadow-sm min-w-0">
+                        <div className="flex items-center justify-between mb-3 gap-2">
+                          <span className="font-semibold text-sm text-gray-800 dark:text-gray-200 capitalize truncate">{msg.tool.replace(/_/g, ' ')}</span>
+                          <span className="text-xs capitalize font-medium text-gray-500 dark:text-gray-400 shrink-0">{msg.status}</span>
+                        </div>
 
-                      {msg.status === 'processing' || msg.status === 'pending' ? (
-                        <ProcessingStage />
-                      ) : msg.status === 'done' ? (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
-                            <CheckCircle2 size={16} className="shrink-0" />
-                            <span>Processing complete!</span>
+                        {msg.status === 'processing' || msg.status === 'pending' ? (
+                          <ProcessingStage />
+                        ) : msg.status === 'done' ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+                              <CheckCircle2 size={16} className="shrink-0" />
+                              <span>Processing complete!</span>
+                            </div>
+                            {msg.downloadUrl && (
+                              <button onClick={() => handleForceDownload(msg.downloadUrl, msg.filename)} className="flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-medium transition-colors shadow-sm min-w-0">
+                                <Download size={14} className="shrink-0" />
+                                <span className="truncate">Download Output</span>
+                              </button>
+                            )}
                           </div>
-                          {msg.downloadUrl && (
-                            <button onClick={() => handleForceDownload(msg.downloadUrl, msg.filename)} className="flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-medium transition-colors shadow-sm min-w-0">
-                              <Download size={14} className="shrink-0" />
-                              <span className="truncate">Download Output</span>
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex items-start gap-2 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 p-3 rounded-xl text-xs font-medium min-w-0">
-                          <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                          <span className="break-words min-w-0">{msg.error}</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : msg.type === 'note' ? (
-                    <div className="px-5 py-3.5 max-w-[85%] sm:max-w-[80%] text-[15px] leading-relaxed rounded-2xl bg-amber-100/80 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800/50 rounded-tr-sm flex items-start gap-3 shadow-sm min-w-0">
-                      <StickyNote size={18} className="shrink-0 mt-0.5 opacity-70" />
-                      <span className="break-words min-w-0 whitespace-pre-wrap">{msg.content}</span>
-                    </div>
-                  ) : (
-                    <div className="px-5 py-3.5 max-w-[85%] sm:max-w-[80%] text-[15px] leading-relaxed rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-tr-sm break-words min-w-0 whitespace-pre-wrap">
-                      {msg.content}
-                    </div>
-                  )}
-                </div>
-              ))}
-              
-              <div ref={messagesEndRef} className="h-4 w-full" />
-            </div>
-
-            {/* --- NEW FOOTER --- */}
-            <div className="mt-auto pt-10 flex flex-col items-center justify-center gap-3 animate-fade-in w-full text-center">
-              <p className="text-[12px] text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1.5 font-medium tracking-wide">
-                Developed with <Heart size={14} className="text-rose-500 fill-rose-500" /> by <span className="font-bold text-gray-700 dark:text-gray-200">AtomDev Studios</span>
-              </p>
-              <div className="flex items-center justify-center gap-4 text-xs font-semibold">
-                <button onClick={() => setIsContactModalOpen(true)} className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors">
-                  Report an Issue
-                </button>
-                <span className="text-gray-300 dark:text-gray-700">•</span>
-                <button onClick={() => setIsContactModalOpen(true)} className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors">
-                  Contact Us
-                </button>
+                        ) : (
+                          <div className="flex items-start gap-2 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 p-3 rounded-xl text-xs font-medium min-w-0">
+                            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                            <span className="break-words min-w-0">{msg.error}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : msg.type === 'note' ? (
+                      <div className="px-5 py-3.5 max-w-[85%] sm:max-w-[80%] text-[15px] leading-relaxed rounded-2xl bg-amber-100/80 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800/50 rounded-tr-sm flex items-start gap-3 shadow-sm min-w-0">
+                        <StickyNote size={18} className="shrink-0 mt-0.5 opacity-70" />
+                        <span className="break-words min-w-0 whitespace-pre-wrap">{msg.content}</span>
+                      </div>
+                    ) : (
+                      <div className="px-5 py-3.5 max-w-[85%] sm:max-w-[80%] text-[15px] leading-relaxed rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-tr-sm break-words min-w-0 whitespace-pre-wrap">
+                        {msg.content}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                <div ref={messagesEndRef} className="h-4 w-full" />
               </div>
-            </div>
-            {/* --- END FOOTER --- */}
 
+              {/* --- NEW FOOTER --- */}
+              <div className="w-full text-center pb-28 sm:pb-32 pt-10 opacity-70 hover:opacity-100 transition-opacity mt-auto">
+                <p className="text-[12px] text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1.5 font-medium tracking-wide">
+                  Developed with <Heart size={14} className="text-rose-500 fill-rose-500" /> by <span className="font-bold text-gray-700 dark:text-gray-200">AtomDev Studios</span>
+                </p>
+                <div className="flex items-center justify-center gap-4 text-xs font-semibold mt-3">
+                  <button onClick={() => setIsContactModalOpen(true)} className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors">
+                    Report an Issue
+                  </button>
+                  <span className="text-gray-300 dark:text-gray-700">•</span>
+                  <button onClick={() => setIsContactModalOpen(true)} className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors">
+                    Contact Us
+                  </button>
+                </div>
+              </div>
+              {/* --- END FOOTER --- */}
+
+            </div>
           </div>
 
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent dark:from-gray-950 dark:via-gray-950 p-4 md:p-6 pt-20 pointer-events-none">
