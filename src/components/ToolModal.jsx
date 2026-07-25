@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   X, Upload, FileAudio, Video, FileText, Image as ImageIcon, 
   Presentation, Table, FileArchive, Palette, Clock, Cpu, 
-  Scissors, ImageMinus, Globe2
+  Scissors, ImageMinus, Globe2 
 } from 'lucide-react';
 
 export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
@@ -11,7 +11,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
   const [file, setFile] = useState(null);
   const [files, setFiles] = useState([]);
   const [url, setUrl] = useState('');
-  
+
   // Options State
   const [theme, setTheme] = useState('Ocean Blue');
   const [imageFormat, setImageFormat] = useState('png');
@@ -26,24 +26,24 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
     // Media & Audio/Video
     { 
       id: 'transcribe_audio', name: 'Standard Transcription', category: 'Media', icon: FileAudio, 
-      desc: 'Extract text from audio/video. Supports automatic AI translation.',
+      desc: 'Extract text from ANY audio/video format. Supports AI translation.',
       tag: '⚡ Fast', tagColor: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
     },
     { 
       id: 'transcribe_with_speakers', name: 'Speaker Diarization', category: 'Media', icon: FileAudio, 
-      desc: 'Transcribe audio/video with detailed speaker annotations',
-      tag: '⏱️ Slower', tagColor: 'text-amber-400 bg-amber-400/10 border-amber-400/20'
+      desc: 'Transcribe ANY audio/video with detailed speaker annotations',
+      tag: '🐢 Slower', tagColor: 'text-amber-400 bg-amber-400/10 border-amber-400/20'
     },
     { id: 'download_video', name: 'Web Video Downloader', category: 'Media', icon: Video, desc: 'Download videos from YouTube, TikTok, IG, X' },
-    { id: 'extract_audio_from_video', name: 'Extract Audio (MP3)', category: 'Media', icon: FileAudio, desc: 'Pull MP3 track from any MP4/MOV video' },
+    { id: 'extract_audio_from_video', name: 'Extract Audio (MP3)', category: 'Media', icon: FileAudio, desc: 'Pull audio track from ANY video format (MP4, MKV, AVI)' },
     
     // Presentations
-    { id: 'docx_to_pptx', name: 'Word to PPTX', category: 'Presentations', icon: Presentation, desc: 'Convert Word docs into themed slide decks' },
+    { id: 'docx_to_pptx', name: 'Word to PPTX', category: 'Presentations', icon: Presentation, desc: 'Convert Word docs (.doc/.docx) into themed slide decks' },
     { id: 'pdf_to_pptx', name: 'PDF to PPTX', category: 'Presentations', icon: Presentation, desc: 'Turn PDF pages into PowerPoint slides' },
-    { id: 'pptx_to_docx', name: 'PPTX to Word', category: 'Presentations', icon: FileText, desc: 'Extract slides and images into a Word doc' },
+    { id: 'pptx_to_docx', name: 'PPTX to Word', category: 'Presentations', icon: FileText, desc: 'Extract slides and images into a Word doc (.docx)' },
     
     // Documents & PDFs
-    { id: 'pdf_to_docx', name: 'PDF to Word', category: 'Documents', icon: FileText, desc: 'Convert PDF files into editable .docx' },
+    { id: 'pdf_to_docx', name: 'PDF to Word', category: 'Documents', icon: FileText, desc: 'Convert PDF files into editable .doc/.docx' },
     { id: 'docx_to_pdf', name: 'Word to PDF', category: 'Documents', icon: FileText, desc: 'Render Word documents directly to PDF' },
     { id: 'extract_pdf_text', name: 'Extract PDF Text', category: 'Documents', icon: FileText, desc: 'Dump all text content from a PDF file' },
     { id: 'pdf_to_images', name: 'PDF to PNG Zip', category: 'Documents', icon: FileArchive, desc: 'Convert every PDF page to PNG images' },
@@ -53,7 +53,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
     { id: 'compress_docx', name: 'Compress Word Doc', category: 'Documents', icon: FileText, desc: 'Reduce the file size of heavy .docx files' },
     
     // Spreadsheets
-    { id: 'csv_to_xlsx', name: 'CSV to Excel', category: 'Spreadsheets', icon: Table, desc: 'Convert raw CSV into formatted Excel' },
+    { id: 'csv_to_xlsx', name: 'CSV to Excel', category: 'Spreadsheets', icon: Table, desc: 'Convert raw CSV into formatted Excel (.xls/.xlsx)' },
     { id: 'xlsx_to_csv', name: 'Excel to CSV', category: 'Spreadsheets', icon: Table, desc: 'Export active sheet from Excel to CSV' },
     
     // Images
@@ -65,6 +65,16 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
 
   const categories = ['All', 'Presentations', 'Documents', 'Media', 'Spreadsheets', 'Images'];
   const filteredTools = activeCategory === 'All' ? tools : tools.filter(t => t.category === activeCategory);
+
+  // Smart File Picker Logic
+  let acceptTypes = '*/*';
+  if (selectedTool === 'merge_pdfs' || selectedTool === 'split_pdf') acceptTypes = '.pdf';
+  else if (selectedTool === 'remove_background' || selectedTool === 'convert_image' || selectedTool === 'grayscale_image' || selectedTool === 'compress_image') acceptTypes = 'image/*';
+  else if (selectedTool === 'transcribe_audio' || selectedTool === 'transcribe_with_speakers' || selectedTool === 'extract_audio_from_video') acceptTypes = 'audio/*,video/*';
+  else if (selectedTool === 'docx_to_pptx' || selectedTool === 'docx_to_pdf' || selectedTool === 'compress_docx') acceptTypes = '.doc,.docx';
+  else if (selectedTool === 'csv_to_xlsx') acceptTypes = '.csv';
+  else if (selectedTool === 'xlsx_to_csv') acceptTypes = '.xls,.xlsx';
+  else if (selectedTool === 'pptx_to_docx') acceptTypes = '.ppt,.pptx';
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -159,7 +169,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
           ) : (
             <div className="space-y-5">
               <button type="button" onClick={() => setSelectedTool(null)} className="text-xs font-semibold text-cyan-400 hover:underline">
-                ← Back to tool directory
+                  Back to tool directory
               </button>
               
               <h3 className="font-bold text-slate-100 text-base">Configuring: {tools.find(t => t.id === selectedTool)?.name}</h3>
@@ -189,7 +199,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                     </span>
                     <input
                       type="file" multiple={selectedTool === 'merge_pdfs'}
-                      accept={selectedTool === 'merge_pdfs' || selectedTool === 'split_pdf' ? '.pdf' : selectedTool === 'remove_background' ? 'image/*' : '*/*'}
+                      accept={acceptTypes}
                       onChange={(e) => { selectedTool === 'merge_pdfs' ? setFiles(Array.from(e.target.files)) : setFile(e.target.files[0]) }}
                       className="absolute inset-0 opacity-0 cursor-pointer"
                     />
@@ -228,15 +238,16 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                 </div>
               )}
 
-              {/* Whisper Model Tier */}
+              {/* Whisper Model Tier (With RAM Warnings) */}
               {(selectedTool === 'transcribe_audio' || selectedTool === 'transcribe_with_speakers') && (
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5"><Cpu size={14} className="text-cyan-400" /> Whisper Model Tier (Speed vs Accuracy)</label>
                   <select value={modelSize} onChange={(e) => setModelSize(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-200 outline-none focus:ring-2 focus:ring-cyan-500">
                     <option value="tiny">Tiny (Blazing Fast - Rough Drafts)</option>
                     <option value="base">Base (Recommended - Fast & Balanced)</option>
-                    <option value="small">Small (Higher Detail)</option>
-                    <option value="large-v3">Large-v3 (Maximum Accuracy - Slowest)</option>
+                    <option value="small">Small (Higher Detail - Slower)</option>
+                    <option value="medium">Medium (Requires &gt;4GB VPS RAM)</option>
+                    <option value="large-v3">Large-v3 (Requires &gt;8GB VPS RAM)</option>
                   </select>
                 </div>
               )}

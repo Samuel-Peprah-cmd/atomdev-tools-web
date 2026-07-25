@@ -317,11 +317,12 @@ export default function App() {
 
   const handleForceDownload = async (url, filename) => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const isVideo = url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.mov');
+    
+    // Check for ALL major media formats, not just mp4
+    const isMedia = url.match(/\.(mp4|mov|webm|mkv|avi|mp3|m4a|wav)$/i);
 
-    // MOBILE VIDEO FIX: Open directly in the native browser/media player.
-    // This allows iOS/Android to recognize it as a video, allowing "Save to Gallery/Photos".
-    if (isMobile && isVideo) {
+    // MOBILE MEDIA FIX: Open directly in the native browser/media player.
+    if (isMobile && isMedia) {
       const a = document.createElement('a');
       a.href = url;
       a.target = '_blank';
@@ -332,13 +333,16 @@ export default function App() {
       return;
     }
 
-    // DESKTOP OR NON-VIDEO: Use Blob to force a silent, direct download
+    // DESKTOP OR NON-MEDIA: Use Blob to force a silent, direct download
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error('Network response failed');
       const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
       
+      // Safety Check: If the file downloaded as 0 bytes, fallback to direct link
+      if (blob.size === 0) throw new Error('Downloaded file is empty');
+      
+      const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
       a.download = filename || 'AtomDev_Output';
@@ -347,7 +351,7 @@ export default function App() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(blobUrl);
     } catch (e) {
-      console.warn("Blob download failed (CORS or encoding), falling back to direct link:", e);
+      console.warn("Blob download failed, falling back to direct link:", e);
       window.open(url, '_blank');
     }
   };
