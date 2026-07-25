@@ -415,7 +415,7 @@ export default function App() {
   };
 
   return (
-    <div className="h-[100dvh] w-full overflow-hidden">
+    <div className="h-dvh[100dvh] w-full overflow-hidden">
       <div className="relative flex h-full w-full overflow-hidden bg-gray-50 font-sans text-gray-800 transition-colors duration-300 dark:bg-gray-950 dark:text-gray-200">
         
         {isSidebarOpen && (
@@ -429,7 +429,7 @@ export default function App() {
 
         <aside
           id="workspace-sidebar"
-          className={`fixed inset-y-0 left-0 z-40 flex h-[100dvh] shrink-0 flex-col overflow-hidden border-gray-200 bg-gray-100 transition-[width,transform,border-color] duration-300 ease-out dark:border-gray-800 dark:bg-gray-900 md:relative md:z-auto md:h-full ${
+          className={`fixed inset-y-0 left-0 z-40 flex h-dvh[100dvh] shrink-0 flex-col overflow-hidden border-gray-200 bg-gray-100 transition-[width,transform,border-color] duration-300 ease-out dark:border-gray-800 dark:bg-gray-900 md:relative md:z-auto md:h-full ${
             isSidebarOpen
               ? 'w-[min(19rem,calc(100vw-2.5rem))] translate-x-0 border-r shadow-2xl shadow-slate-950/15 md:w-64 md:shadow-none'
               : 'w-[min(19rem,calc(100vw-2.5rem))] -translate-x-full border-r shadow-none md:w-0 md:translate-x-0 md:border-r-0'
