@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Paperclip, Send, Sparkles, Download, Loader2, CheckCircle2, AlertCircle, MessageSquare, Menu, Moon, Sun, StickyNote, User, Pencil, Trash2, Clock, MoreVertical, LogIn, LogOut, X, AlertTriangle } from 'lucide-react';
+import { Plus, Paperclip, Send, Sparkles, Download, Loader2, CheckCircle2, AlertCircle, MessageSquare, Menu, Moon, Sun, StickyNote, User, Pencil, Trash2, Clock, MoreVertical, LogIn, LogOut, X, AlertTriangle, Heart } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { submitJob, pollJobStatus } from './api/client';
 import ToolModal from './components/ToolModal';
