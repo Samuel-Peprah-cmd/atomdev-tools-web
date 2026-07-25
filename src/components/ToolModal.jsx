@@ -19,6 +19,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
   const [translateToEnglish, setTranslateToEnglish] = useState(false);
   const [startPage, setStartPage] = useState(1);
   const [endPage, setEndPage] = useState(1);
+  const [bgColor, setBgColor] = useState('transparent');
 
   if (!isOpen) return null;
 
@@ -36,6 +37,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
     },
     { id: 'download_video', name: 'Web Video Downloader', category: 'Media', icon: Video, desc: 'Download videos from YouTube, TikTok, IG, X' },
     { id: 'extract_audio_from_video', name: 'Extract Audio (MP3)', category: 'Media', icon: FileAudio, desc: 'Pull audio track from ANY video format (MP4, MKV, AVI)' },
+    { id: 'video_to_animated', name: 'Video to GIF / Sticker', category: 'Media', icon: Video, desc: 'Turn any short video into an animated GIF or WebP sticker' },
 
     // Presentations
     { id: 'docx_to_pptx', name: 'Word to PPTX', category: 'Presentations', icon: Presentation, desc: 'Convert Word docs (.doc/.docx) into themed slide decks' },
@@ -71,7 +73,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
   let acceptTypes = '*/*';
   if (selectedTool === 'merge_pdfs' || selectedTool === 'split_pdf') acceptTypes = '.pdf';
   else if (selectedTool === 'remove_background' || selectedTool === 'convert_image' || selectedTool === 'grayscale_image' || selectedTool === 'compress_image') acceptTypes = 'image/*';
-  else if (selectedTool === 'transcribe_audio' || selectedTool === 'transcribe_with_speakers' || selectedTool === 'extract_audio_from_video') acceptTypes = 'audio/*,video/*';
+  else if (selectedTool === 'transcribe_audio' || selectedTool === 'transcribe_with_speakers' || selectedTool === 'extract_audio_from_video' || selectedTool === 'video_to_animated') acceptTypes = 'audio/*,video/*';
   else if (selectedTool === 'docx_to_pptx' || selectedTool === 'docx_to_pdf' || selectedTool === 'compress_docx') acceptTypes = '.doc,.docx';
   else if (selectedTool === 'csv_to_xlsx') acceptTypes = '.csv';
   else if (selectedTool === 'xlsx_to_csv') acceptTypes = '.xls,.xlsx';
@@ -99,7 +101,8 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
 
     const options = {};
     if (selectedTool === 'docx_to_pptx' || selectedTool === 'pdf_to_pptx') options.theme_name = theme;
-    if (selectedTool === 'convert_image') options.format = imageFormat;
+    
+    if (selectedTool === 'convert_image' || selectedTool === 'video_to_animated') options.format = imageFormat;
 
     if (selectedTool === 'transcribe_audio') {
       options.model_size = modelSize;
@@ -107,6 +110,10 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
     }
 
     if (selectedTool === 'transcribe_with_speakers') options.model_size = modelSize;
+
+    if (selectedTool === 'remove_background') {
+      options.bg_color = bgColor === 'transparent' ? '' : bgColor;
+    }
 
     if (selectedTool === 'split_pdf') {
       options.start_page = startPage;
@@ -259,6 +266,50 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                     <option value="gif">GIF (Simple Graphics)</option>
                     <option value="bmp">BMP (Uncompressed Bitmap)</option>
                   </select>
+                </div>
+              )}
+
+              {/* Target Format Selector for Video Animation */}
+              {selectedTool === 'video_to_animated' && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
+                    <Palette size={14} className="text-cyan-400" /> Target Animation Format
+                  </label>
+                  <select
+                    value={imageFormat}
+                    onChange={(e) => setImageFormat(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-200 outline-none focus:ring-2 focus:ring-cyan-500"
+                  >
+                    <option value="gif">Animated GIF (Standard Web)</option>
+                    <option value="webp">Animated WEBP (WhatsApp/Telegram Sticker)</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Background Color Selector for Remove BG */}
+              {selectedTool === 'remove_background' && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
+                    <Palette size={14} className="text-cyan-400" /> Replace Background Color
+                  </label>
+                  <div className="flex items-center gap-4 bg-slate-800/50 border border-slate-700 p-3 rounded-xl">
+                    <input
+                      type="color"
+                      value={bgColor === 'transparent' ? '#ffffff' : bgColor}
+                      onChange={(e) => setBgColor(e.target.value)}
+                      disabled={bgColor === 'transparent'}
+                      className={`h-10 w-16 rounded cursor-pointer border-0 bg-transparent p-0 ${bgColor === 'transparent' ? 'opacity-30' : ''}`}
+                    />
+                    <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={bgColor === 'transparent'} 
+                        onChange={(e) => setBgColor(e.target.checked ? 'transparent' : '#ffffff')}
+                        className="rounded border-slate-600 bg-slate-900 text-cyan-500 focus:ring-cyan-500 w-4 h-4"
+                      />
+                      Keep Transparent
+                    </label>
+                  </div>
                 </div>
               )}
 
