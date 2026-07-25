@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  X, Upload, FileAudio, Video, FileText, Image as ImageIcon, 
-  Presentation, Table, FileArchive, Palette, Clock, Cpu, 
-  Scissors, ImageMinus, Globe2 
+import {
+  X, Upload, FileAudio, Video, FileText, Image as ImageIcon,
+  Presentation, Table, FileArchive, Palette, Clock, Cpu,
+  Scissors, ImageMinus, Globe2
 } from 'lucide-react';
 
 export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
@@ -24,24 +24,24 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
 
   const tools = [
     // Media & Audio/Video
-    { 
-      id: 'transcribe_audio', name: 'Standard Transcription', category: 'Media', icon: FileAudio, 
+    {
+      id: 'transcribe_audio', name: 'Standard Transcription', category: 'Media', icon: FileAudio,
       desc: 'Extract text from ANY audio/video format. Supports AI translation.',
-      tag: '⚡ Fast', tagColor: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
+      tag: '  Fast', tagColor: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
     },
-    { 
-      id: 'transcribe_with_speakers', name: 'Speaker Diarization', category: 'Media', icon: FileAudio, 
+    {
+      id: 'transcribe_with_speakers', name: 'Speaker Diarization', category: 'Media', icon: FileAudio,
       desc: 'Transcribe ANY audio/video with detailed speaker annotations',
-      tag: '🐢 Slower', tagColor: 'text-amber-400 bg-amber-400/10 border-amber-400/20'
+      tag: '  Slower', tagColor: 'text-amber-400 bg-amber-400/10 border-amber-400/20'
     },
     { id: 'download_video', name: 'Web Video Downloader', category: 'Media', icon: Video, desc: 'Download videos from YouTube, TikTok, IG, X' },
     { id: 'extract_audio_from_video', name: 'Extract Audio (MP3)', category: 'Media', icon: FileAudio, desc: 'Pull audio track from ANY video format (MP4, MKV, AVI)' },
-    
+
     // Presentations
     { id: 'docx_to_pptx', name: 'Word to PPTX', category: 'Presentations', icon: Presentation, desc: 'Convert Word docs (.doc/.docx) into themed slide decks' },
     { id: 'pdf_to_pptx', name: 'PDF to PPTX', category: 'Presentations', icon: Presentation, desc: 'Turn PDF pages into PowerPoint slides' },
     { id: 'pptx_to_docx', name: 'PPTX to Word', category: 'Presentations', icon: FileText, desc: 'Extract slides and images into a Word doc (.docx)' },
-    
+
     // Documents & PDFs
     { id: 'pdf_to_docx', name: 'PDF to Word', category: 'Documents', icon: FileText, desc: 'Convert PDF files into editable .doc/.docx' },
     { id: 'docx_to_pdf', name: 'Word to PDF', category: 'Documents', icon: FileText, desc: 'Render Word documents directly to PDF' },
@@ -51,11 +51,11 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
     { id: 'split_pdf', name: 'Extract Pages (Split PDF)', category: 'Documents', icon: Scissors, desc: 'Pull a specific page range from a PDF' },
     { id: 'compress_pdf', name: 'Compress PDF', category: 'Documents', icon: FileArchive, desc: 'Drastically reduce PDF file size for emailing' },
     { id: 'compress_docx', name: 'Compress Word Doc', category: 'Documents', icon: FileText, desc: 'Reduce the file size of heavy .docx files' },
-    
+
     // Spreadsheets
     { id: 'csv_to_xlsx', name: 'CSV to Excel', category: 'Spreadsheets', icon: Table, desc: 'Convert raw CSV into formatted Excel (.xls/.xlsx)' },
     { id: 'xlsx_to_csv', name: 'Excel to CSV', category: 'Spreadsheets', icon: Table, desc: 'Export active sheet from Excel to CSV' },
-    
+
     // Images
     { id: 'remove_background', name: 'AI Background Removal', category: 'Images', icon: ImageMinus, desc: 'Instantly strip the background from any photo' },
     { id: 'convert_image', name: 'Format Converter', category: 'Images', icon: ImageIcon, desc: 'Convert between PNG, JPG, WEBP, TIFF' },
@@ -64,6 +64,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
   ];
 
   const categories = ['All', 'Presentations', 'Documents', 'Media', 'Spreadsheets', 'Images'];
+
   const filteredTools = activeCategory === 'All' ? tools : tools.filter(t => t.category === activeCategory);
 
   // Smart File Picker Logic
@@ -79,14 +80,15 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!selectedTool) return;
-    
+
     // --- NEW: CLOUDFLARE 100MB LIMIT CHECK ---
     const MAX_FILE_SIZE = 95 * 1024 * 1024; // 95 Megabytes
+
     if (file && file.size > MAX_FILE_SIZE) {
       alert(`This file is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). The maximum upload limit is 95MB. Please compress the video or upload a smaller file.`);
       return;
     }
-    
+
     if (files && files.length > 0) {
       const totalSize = files.reduce((acc, curr) => acc + curr.size, 0);
       if (totalSize > MAX_FILE_SIZE) {
@@ -94,18 +96,18 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
         return;
       }
     }
-    
+
     const options = {};
     if (selectedTool === 'docx_to_pptx' || selectedTool === 'pdf_to_pptx') options.theme_name = theme;
     if (selectedTool === 'convert_image') options.format = imageFormat;
-    
+
     if (selectedTool === 'transcribe_audio') {
       options.model_size = modelSize;
       if (translateToEnglish) options.task = 'translate';
     }
-    
+
     if (selectedTool === 'transcribe_with_speakers') options.model_size = modelSize;
-    
+
     if (selectedTool === 'split_pdf') {
       options.start_page = startPage;
       options.end_page = endPage;
@@ -149,8 +151,8 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
-                  activeCategory === cat 
-                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/20' 
+                  activeCategory === cat
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/20'
                     : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                 }`}
               >
@@ -184,7 +186,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
           ) : (
             <div className="space-y-5">
               <button type="button" onClick={() => setSelectedTool(null)} className="text-xs font-semibold text-cyan-400 hover:underline">
-                  Back to tool directory
+                Back to tool directory
               </button>
               
               <h3 className="font-bold text-slate-100 text-base">Configuring: {tools.find(t => t.id === selectedTool)?.name}</h3>
@@ -236,6 +238,27 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                     <input type="checkbox" className="sr-only peer" checked={translateToEnglish} onChange={(e) => setTranslateToEnglish(e.target.checked)} />
                     <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
                   </label>
+                </div>
+              )}
+
+              {/* Target Format Selector for Image Converter */}
+              {selectedTool === 'convert_image' && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
+                    <Palette size={14} className="text-cyan-400" /> Target Image Format
+                  </label>
+                  <select
+                    value={imageFormat}
+                    onChange={(e) => setImageFormat(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-200 outline-none focus:ring-2 focus:ring-cyan-500"
+                  >
+                    <option value="png">PNG (High Quality & Transparency)</option>
+                    <option value="jpg">JPG / JPEG (Standard Compressed Photo)</option>
+                    <option value="webp">WEBP (WhatsApp & Telegram Sticker)</option>
+                    <option value="tiff">TIFF (High Resolution Print / Archival)</option>
+                    <option value="gif">GIF (Simple Graphics)</option>
+                    <option value="bmp">BMP (Uncompressed Bitmap)</option>
+                  </select>
                 </div>
               )}
 
