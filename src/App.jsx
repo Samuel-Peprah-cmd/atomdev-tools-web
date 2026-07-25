@@ -6,6 +6,7 @@ import ToolModal from './components/ToolModal';
 import OwnerModal from './components/OwnerModal';
 import TopUpModal from './components/TopUpModal';
 import AdminDashboard from './components/AdminDashboard';
+import ContactModal from './components/ContactModal';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -101,6 +102,7 @@ export default function App() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => !isCompactViewport());
   
   const [editingSessionId, setEditingSessionId] = useState(null);
@@ -677,6 +679,22 @@ export default function App() {
                 </div>
               ))}
               <div ref={messagesEndRef} className="h-4 w-full" />
+              {/* --- NEW FOOTER --- */}
+              <div className="mt-16 mb-4 flex flex-col items-center justify-center gap-3 animate-fade-in">
+                <p className="text-[12px] text-gray-500 dark:text-gray-400 flex items-center gap-1.5 font-medium tracking-wide">
+                  Developed with <Heart size={14} className="text-rose-500 fill-rose-500" /> by <span className="font-bold text-gray-700 dark:text-gray-200">AtomDev Studios</span>
+                </p>
+                <div className="flex items-center gap-4 text-xs font-semibold">
+                  <button onClick={() => setIsContactModalOpen(true)} className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors">
+                    Report an Issue
+                  </button>
+                  <span className="text-gray-300 dark:text-gray-700">•</span>
+                  <button onClick={() => setIsContactModalOpen(true)} className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors">
+                    Contact Us
+                  </button>
+                </div>
+              </div>
+              {/* --- END FOOTER --- */}
             </div>
           </div>
 
@@ -810,6 +828,7 @@ export default function App() {
 
       <ToolModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmitJob={handleToolSubmit} />
       <OwnerModal isOpen={isOwnerModalOpen} onClose={() => setIsOwnerModalOpen(false)} />
+      <ContactModal isOpen={isContactModalOpen} onClose={() => setIsContactModalOpen(false)} />
       
       {/* ADMIN DASHBOARD MODAL */}
       <AdminDashboard 
