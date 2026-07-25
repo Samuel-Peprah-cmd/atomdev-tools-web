@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Ticket, Users, BarChart, Activity, ShieldAlert, Plus, Loader2, X, Edit2, Save, Database, Cpu, HardDrive } from 'lucide-react';
+import { Ticket, Users, BarChart, Activity, ShieldAlert, Plus, Loader2, X, Edit2, Save, Database, Cpu } from 'lucide-react';
 
 export default function AdminDashboard({ isOpen, onClose, authSession }) {
   const [activeTab, setActiveTab] = useState('finance'); 
@@ -126,45 +126,47 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 transition-all duration-300">
-      <div className="bg-slate-950 border border-slate-800 w-full max-w-6xl h-[90vh] rounded-3xl shadow-2xl flex overflow-hidden relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 transition-all duration-300">
+      <div className="bg-slate-950 border border-slate-800 w-full max-w-6xl h-[95vh] sm:h-[90vh] rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col md:flex-row overflow-hidden relative">
         
-        <button onClick={onClose} className="absolute top-6 right-6 p-2 rounded-full bg-slate-900 border border-slate-700 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors z-20">
+        {/* Close Button */}
+        <button onClick={onClose} className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-full bg-slate-900 border border-slate-700 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors z-30">
           <X size={20} />
         </button>
 
-        {/* Sidebar */}
-        <aside className="w-72 bg-slate-900/50 border-r border-slate-800 p-8 flex flex-col gap-2 shrink-0">
-          <div className="flex items-center gap-3 mb-10 text-cyan-400">
+        {/* Responsive Sidebar / Tab Bar */}
+        <aside className="w-full md:w-72 bg-slate-900/50 border-b md:border-b-0 md:border-r border-slate-800 p-4 sm:p-6 md:p-8 flex flex-row md:flex-col gap-2 shrink-0 overflow-x-auto custom-scrollbar">
+          <div className="hidden md:flex items-center gap-3 mb-10 text-cyan-400">
             <ShieldAlert size={32} />
             <h2 className="text-2xl font-bold tracking-widest uppercase">Admin HQ</h2>
           </div>
-          <button onClick={() => setActiveTab('finance')} className={`flex items-center gap-4 p-4 rounded-xl transition-all font-semibold ${activeTab === 'finance' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'hover:bg-slate-800/50 text-slate-400'}`}>
-            <BarChart size={20} /> Command Center
+          
+          <button onClick={() => setActiveTab('finance')} className={`flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl transition-all font-semibold whitespace-nowrap text-xs md:text-sm ${activeTab === 'finance' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'hover:bg-slate-800/50 text-slate-400'}`}>
+            <BarChart size={18} /> Command Center
           </button>
-          <button onClick={() => setActiveTab('users')} className={`flex items-center gap-4 p-4 rounded-xl transition-all font-semibold ${activeTab === 'users' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'hover:bg-slate-800/50 text-slate-400'}`}>
-            <Users size={20} /> User Management
+          <button onClick={() => setActiveTab('users')} className={`flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl transition-all font-semibold whitespace-nowrap text-xs md:text-sm ${activeTab === 'users' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'hover:bg-slate-800/50 text-slate-400'}`}>
+            <Users size={18} /> User Management
           </button>
-          <button onClick={() => setActiveTab('coupons')} className={`flex items-center gap-4 p-4 rounded-xl transition-all font-semibold ${activeTab === 'coupons' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'hover:bg-slate-800/50 text-slate-400'}`}>
-            <Ticket size={20} /> Promo Engine
+          <button onClick={() => setActiveTab('coupons')} className={`flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl transition-all font-semibold whitespace-nowrap text-xs md:text-sm ${activeTab === 'coupons' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'hover:bg-slate-800/50 text-slate-400'}`}>
+            <Ticket size={18} /> Promo Engine
           </button>
-          <button onClick={() => setActiveTab('logs')} className={`flex items-center gap-4 p-4 rounded-xl transition-all font-semibold ${activeTab === 'logs' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'hover:bg-slate-800/50 text-slate-400'}`}>
-            <Activity size={20} /> System Logs
+          <button onClick={() => setActiveTab('logs')} className={`flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl transition-all font-semibold whitespace-nowrap text-xs md:text-sm ${activeTab === 'logs' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'hover:bg-slate-800/50 text-slate-400'}`}>
+            <Activity size={18} /> System Logs
           </button>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 p-10 overflow-y-auto custom-scrollbar relative">
+        {/* Main Content Area */}
+        <main className="flex-1 p-4 sm:p-8 md:p-10 overflow-y-auto custom-scrollbar relative">
           
           {/* --- COMMAND CENTER (FINANCE) --- */}
           {activeTab === 'finance' && (
             <div>
-              <div className="flex justify-between items-end mb-8">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
                 <div>
-                  <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">Command Center</h1>
-                  <p className="text-slate-400 text-sm">Platform statistics and economic overview.</p>
+                  <h1 className="text-2xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">Command Center</h1>
+                  <p className="text-slate-400 text-xs sm:text-sm">Platform statistics and economic overview.</p>
                 </div>
-                <button onClick={fetchStats} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition-colors border border-slate-700">
+                <button onClick={fetchStats} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs sm:text-sm font-semibold transition-colors border border-slate-700">
                   Refresh Data
                 </button>
               </div>
@@ -172,34 +174,34 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
               {statsLoading && !stats ? (
                 <div className="flex justify-center mt-20 text-cyan-500"><Loader2 className="animate-spin" size={32} /></div>
               ) : stats ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl flex items-center gap-6">
-                    <div className="w-16 h-16 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30">
-                      <Users size={28} />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                  <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl flex items-center gap-4 sm:gap-6">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30">
+                      <Users size={24} />
                     </div>
                     <div>
-                      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Users</p>
-                      <h3 className="text-3xl font-black text-white">{stats.total_users}</h3>
+                      <p className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Total Users</p>
+                      <h3 className="text-2xl sm:text-3xl font-black text-white">{stats.total_users}</h3>
                     </div>
                   </div>
 
-                  <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl flex items-center gap-6">
-                    <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
-                      <Cpu size={28} />
+                  <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl flex items-center gap-4 sm:gap-6">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                      <Cpu size={24} />
                     </div>
                     <div>
-                      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Jobs Run</p>
-                      <h3 className="text-3xl font-black text-white">{stats.total_jobs}</h3>
+                      <p className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Total Jobs Run</p>
+                      <h3 className="text-2xl sm:text-3xl font-black text-white">{stats.total_jobs}</h3>
                     </div>
                   </div>
 
-                  <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl flex items-center gap-6">
-                    <div className="w-16 h-16 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/30">
-                      <Database size={28} />
+                  <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl flex items-center gap-4 sm:gap-6">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/30">
+                      <Database size={24} />
                     </div>
                     <div>
-                      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Credits in Wild</p>
-                      <h3 className="text-3xl font-black text-white">{stats.total_credits_in_circulation}</h3>
+                      <p className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Credits in Wild</p>
+                      <h3 className="text-2xl sm:text-3xl font-black text-white">{stats.total_credits_in_circulation}</h3>
                     </div>
                   </div>
                 </div>
@@ -210,12 +212,12 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
           {/* --- SYSTEM LOGS --- */}
           {activeTab === 'logs' && (
             <div>
-              <div className="flex justify-between items-end mb-8">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
                 <div>
-                  <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">System Logs</h1>
-                  <p className="text-slate-400 text-sm">Real-time feed of the last 100 jobs processed by the engine.</p>
+                  <h1 className="text-2xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">System Logs</h1>
+                  <p className="text-slate-400 text-xs sm:text-sm">Real-time feed of the last 100 jobs processed by the engine.</p>
                 </div>
-                <button onClick={fetchStats} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition-colors border border-slate-700">
+                <button onClick={fetchStats} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs sm:text-sm font-semibold transition-colors border border-slate-700">
                   Refresh Logs
                 </button>
               </div>
@@ -223,7 +225,7 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
               {statsLoading && !stats ? (
                  <div className="flex justify-center mt-20 text-cyan-500"><Loader2 className="animate-spin" size={32} /></div>
               ) : stats ? (
-                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-x-auto shadow-xl custom-scrollbar">
                   <table className="w-full text-left text-sm whitespace-nowrap">
                     <thead className="bg-slate-950/50 text-slate-400 uppercase tracking-wider text-[10px] font-bold border-b border-slate-800">
                       <tr>
@@ -256,12 +258,12 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
           {/* --- USERS TAB --- */}
           {activeTab === 'users' && (
             <div className="w-full">
-              <div className="flex justify-between items-end mb-8">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
                 <div>
-                  <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">User Management</h1>
-                  <p className="text-slate-400 text-sm">View, edit, and manage access for all registered accounts.</p>
+                  <h1 className="text-2xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">User Management</h1>
+                  <p className="text-slate-400 text-xs sm:text-sm">View, edit, and manage access for all registered accounts.</p>
                 </div>
-                <button onClick={fetchUsers} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition-colors border border-slate-700">
+                <button onClick={fetchUsers} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs sm:text-sm font-semibold transition-colors border border-slate-700">
                   Refresh List
                 </button>
               </div>
@@ -277,7 +279,7 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
                   <Loader2 className="animate-spin mb-4" size={32} />
                 </div>
               ) : (
-                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-x-auto shadow-xl custom-scrollbar">
                   <table className="w-full text-left text-sm whitespace-nowrap">
                     <thead className="bg-slate-950/50 text-slate-400 uppercase tracking-wider text-[10px] font-bold border-b border-slate-800">
                       <tr>
@@ -316,10 +318,10 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
           {/* --- COUPONS TAB --- */}
           {activeTab === 'coupons' && (
             <div className="max-w-2xl mt-4">
-              <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">Coupon Generator</h1>
-              <p className="text-slate-400 mb-10 text-sm">Issue highly secure promotional codes to grant compute credits to users.</p>
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">Coupon Generator</h1>
+              <p className="text-slate-400 mb-8 sm:mb-10 text-xs sm:text-sm">Issue highly secure promotional codes to grant compute credits to users.</p>
 
-              <form onSubmit={handleCreateCoupon} className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 space-y-6 shadow-xl">
+              <form onSubmit={handleCreateCoupon} className="bg-slate-900/80 border border-slate-800 rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
                 {couponMessage && (
                   <div className={`p-4 rounded-xl text-sm font-semibold border ${couponMessage.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}>
                     {couponMessage.text}
@@ -328,24 +330,24 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Coupon Code</label>
-                  <div className="flex gap-3">
-                    <input type="text" required value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="e.g. ATOM-FREE-50" className="flex-1 px-5 py-4 bg-slate-950 border border-slate-800 rounded-2xl text-white outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all uppercase font-mono tracking-wide" />
-                    <button type="button" onClick={generateRandomCode} className="px-6 py-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl transition-colors font-bold text-slate-200">Random</button>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input type="text" required value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="e.g. ATOM-FREE-50" className="flex-1 px-4 sm:px-5 py-3 sm:py-4 bg-slate-950 border border-slate-800 rounded-2xl text-white outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all uppercase font-mono tracking-wide" />
+                    <button type="button" onClick={generateRandomCode} className="px-6 py-3 sm:py-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl transition-colors font-bold text-slate-200">Random</button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Credits Value</label>
-                    <input type="number" min="1" required value={creditsAmount} onChange={(e) => setCreditsAmount(e.target.value)} className="w-full px-5 py-4 bg-slate-950 border border-slate-800 rounded-2xl text-white outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono" />
+                    <input type="number" min="1" required value={creditsAmount} onChange={(e) => setCreditsAmount(e.target.value)} className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-slate-950 border border-slate-800 rounded-2xl text-white outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Valid For (Days)</label>
-                    <input type="number" min="1" required value={daysValid} onChange={(e) => setDaysValid(e.target.value)} className="w-full px-5 py-4 bg-slate-950 border border-slate-800 rounded-2xl text-white outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono" />
+                    <input type="number" min="1" required value={daysValid} onChange={(e) => setDaysValid(e.target.value)} className="w-full px-4 sm:px-5 py-3 sm:py-4 bg-slate-950 border border-slate-800 rounded-2xl text-white outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono" />
                   </div>
                 </div>
 
-                <button type="submit" disabled={couponLoading} className="w-full py-4 mt-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50">
+                <button type="submit" disabled={couponLoading} className="w-full py-3.5 sm:py-4 mt-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50">
                   {couponLoading ? <Loader2 className="animate-spin" size={20} /> : <><Plus size={20} /> Deploy Coupon</>}
                 </button>
               </form>
@@ -353,10 +355,10 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
           )}
         </main>
 
-        {/* --- EDIT USER SLIDE-OVER MODAL --- */}
+        {/* --- EDIT USER SLIDE-OVER MODAL (Responsive Width) --- */}
         {editingUser && (
-          <div className="absolute inset-y-0 right-0 w-96 bg-slate-900 border-l border-slate-800 shadow-2xl p-8 z-30 flex flex-col transform transition-transform duration-300">
-            <div className="flex justify-between items-center mb-8">
+          <div className="absolute inset-y-0 right-0 w-full sm:w-96 bg-slate-900 border-l border-slate-800 shadow-2xl p-6 sm:p-8 z-30 flex flex-col transform transition-transform duration-300">
+            <div className="flex justify-between items-center mb-6 sm:mb-8">
               <h3 className="text-xl font-bold text-white">Edit User</h3>
               <button onClick={() => setEditingUser(null)} className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors">
                 <X size={18} />
