@@ -5,6 +5,7 @@ import { submitJob, pollJobStatus } from './api/client';
 import ToolModal from './components/ToolModal';
 import OwnerModal from './components/OwnerModal';
 import TopUpModal from './components/TopUpModal';
+import AdminDashboard from './components/AdminDashboard';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -56,12 +57,14 @@ const ProcessingStage = () => {
     "Running heavy AI algorithms...",
     "Packaging final results..."
   ];
+
   useEffect(() => {
     const timer = setInterval(() => {
       setStageIndex((prev) => (prev < stages.length - 1 ? prev + 1 : prev));
     }, 4000);
     return () => clearInterval(timer);
   }, []);
+
   return (
     <div className="flex flex-col gap-2 bg-indigo-50 dark:bg-indigo-900/30 p-3.5 rounded-xl border border-indigo-500/20 text-sm">
       <div className="flex items-center gap-3 text-indigo-600 dark:text-indigo-400 font-medium">
@@ -89,17 +92,22 @@ export default function App() {
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [showDepletedModal, setShowDepletedModal] = useState(false);
 
+  // Hidden Admin Trigger State
+  const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
+
   const [sessions, setSessions] = useState(getStoredSessions);
   const [activeSessionId, setActiveSessionId] = useState(sessions[0]?.id);
   const [inputText, setInputText] = useState('');
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => !isCompactViewport());
+  
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  
+
   const messagesEndRef = useRef(null);
   const profileMenuRef = useRef(null);
   const [isDarkMode, setIsDarkMode] = useState(getInitialTheme);
@@ -275,7 +283,6 @@ export default function App() {
     if (!window.confirm("WARNING: Are you absolutely sure you want to delete your account? All your data and credits will be permanently wiped. This cannot be undone.")) return;
     
     try {
-      // Call our custom Flask endpoint to delete the user via Admin API
       const response = await fetch(`${import.meta.env.VITE_HEAVY_API_URL}/atomdev-api/user`, {
         method: "DELETE",
         headers: {
@@ -300,6 +307,7 @@ export default function App() {
   const handleTextSubmit = (e) => {
     e.preventDefault();
     if (!inputText.trim()) return;
+
     const isUrl = /^https?:\/\//i.test(inputText.trim());
     if (isUrl) {
       handleToolSubmit({ tool: 'download_video', url: inputText.trim(), options: {} });
@@ -317,11 +325,8 @@ export default function App() {
 
   const handleForceDownload = async (url, filename) => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
-    // Check for ALL major media formats, not just mp4
     const isMedia = url.match(/\.(mp4|mov|webm|mkv|avi|mp3|m4a|wav)$/i);
 
-    // MOBILE MEDIA FIX: Open directly in the native browser/media player.
     if (isMobile && isMedia) {
       const a = document.createElement('a');
       a.href = url;
@@ -333,13 +338,11 @@ export default function App() {
       return;
     }
 
-    // DESKTOP OR NON-MEDIA: Use Blob to force a silent, direct download
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error('Network response failed');
       const blob = await response.blob();
       
-      // Safety Check: If the file downloaded as 0 bytes, fallback to direct link
       if (blob.size === 0) throw new Error('Downloaded file is empty');
       
       const blobUrl = window.URL.createObjectURL(blob);
@@ -364,10 +367,12 @@ export default function App() {
     const token = authSession.access_token;
     const userMsgId = Date.now().toString();
     const jobMsgId = (Date.now() + 1).toString();
+
     let contentStr = '';
     if (files && files.length > 0) contentStr = `[Files]: ${files.length} documents -> ${tool}`;
     else if (file) contentStr = `[File]: ${file.name} -> ${tool}`;
     else contentStr = `[URL]: ${url} -> ${tool}`;
+
     const userMessage = { id: userMsgId, role: 'user', type: 'command', content: contentStr };
     const initialJobMessage = {
       id: jobMsgId, role: 'assistant', type: 'job_status', status: 'pending',
@@ -419,6 +424,7 @@ export default function App() {
             className="fixed inset-0 z-30 bg-slate-950/35 backdrop-blur-[1px] md:hidden"
           />
         )}
+
         <aside
           id="workspace-sidebar"
           className={`fixed inset-y-0 left-0 z-40 flex h-[100dvh] shrink-0 flex-col overflow-hidden border-gray-200 bg-gray-100 transition-[width,transform,border-color] duration-300 ease-out dark:border-gray-800 dark:bg-gray-900 md:relative md:z-auto md:h-full ${
@@ -437,6 +443,7 @@ export default function App() {
                 <span>New Session</span>
               </button>
             </div>
+
             <div className="flex-1 overflow-y-auto min-h-0 mt-2 space-y-1 px-3 custom-scrollbar">
               <p className="text-xs font-bold tracking-wider text-gray-400 dark:text-gray-500 px-1 mb-3 uppercase">Workspace History</p>
               {sessions.map(session => (
@@ -517,6 +524,7 @@ export default function App() {
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">View Profile & Info</p>
                 </div>
               </button>
+
               <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center tracking-wide">
                 AtomDev Tools v0.8.8
               </p>
@@ -531,8 +539,10 @@ export default function App() {
               <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400">
                 <Menu size={20} />
               </button>
-              <span className="font-semibold text-gray-800 dark:text-gray-200 tracking-tight">AtomDev Workspace</span>
+              {/* HIDDEN ADMIN TRIGGER: Double click the title to open Dashboard */}
+              <span onDoubleClick={() => setIsAdminDashboardOpen(true)} className="font-semibold cursor-default text-gray-800 dark:text-gray-200 tracking-tight select-none">AtomDev Workspace</span>
             </div>
+
             <div className="flex items-center gap-2">
               {!authSession ? (
                 <button
@@ -563,6 +573,7 @@ export default function App() {
                       {authSession.user.user_metadata?.full_name || authSession.user.email.split('@')[0]}
                     </span>
                   </button>
+
                   {showProfileMenu && (
                     <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg z-50 overflow-hidden">
                       <div className="p-3 border-b border-gray-100 dark:border-gray-800">
@@ -592,16 +603,17 @@ export default function App() {
                           Delete Account
                         </button>
                       </div>
-
                     </div>
                   )}
                 </div>
               )}
+
               <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 ml-2">
                 {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
               </button>
             </div>
           </header>
+
           <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-48">
             <div className="max-w-3xl mx-auto space-y-6">
               {messages.length === 0 && (
@@ -615,6 +627,7 @@ export default function App() {
                   </p>
                 </div>
               )}
+
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   {msg.role === 'assistant' && (
@@ -628,6 +641,7 @@ export default function App() {
                         <span className="font-semibold text-sm text-gray-800 dark:text-gray-200 capitalize truncate">{msg.tool.replace(/_/g, ' ')}</span>
                         <span className="text-xs capitalize font-medium text-gray-500 dark:text-gray-400 shrink-0">{msg.status}</span>
                       </div>
+
                       {msg.status === 'processing' || msg.status === 'pending' ? (
                         <ProcessingStage />
                       ) : msg.status === 'done' ? (
@@ -665,6 +679,7 @@ export default function App() {
               <div ref={messagesEndRef} className="h-4 w-full" />
             </div>
           </div>
+
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent dark:from-gray-950 dark:via-gray-950 p-4 md:p-6 pt-20 pointer-events-none">
             <div className="max-w-3xl mx-auto pointer-events-auto">
               <form onSubmit={handleTextSubmit} className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-xl flex items-center p-2 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
@@ -694,6 +709,7 @@ export default function App() {
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
               Sign in to execute high-performance AI tools and track job history.
             </p>
+
             {authError && (
               <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-600 dark:text-rose-400 text-xs">
                 {authError}
@@ -789,10 +805,19 @@ export default function App() {
         userId={authSession?.user?.id}
         userEmail={authSession?.user?.email}
         onTopUpSuccess={() => fetchUserCredits(authSession?.user?.id)}
+        authSession={authSession}
       />
 
       <ToolModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmitJob={handleToolSubmit} />
       <OwnerModal isOpen={isOwnerModalOpen} onClose={() => setIsOwnerModalOpen(false)} />
+      
+      {/* ADMIN DASHBOARD MODAL */}
+      <AdminDashboard 
+        isOpen={isAdminDashboardOpen} 
+        onClose={() => setIsAdminDashboardOpen(false)} 
+        authSession={authSession} 
+      />
+
     </div>
   );
 }

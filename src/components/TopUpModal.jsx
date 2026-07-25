@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { X, CreditCard, Sparkles } from 'lucide-react';
 import { usePaystackPayment } from 'react-paystack';
+import RedeemCoupon from './RedeemCoupon';
 
-export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUpSuccess }) {
+export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUpSuccess, authSession }) {
   const [creditAmount, setCreditAmount] = useState(10);
-  
+
   if (!isOpen) return null;
 
   const parsedAmount = parseInt(creditAmount, 10) || 0;
@@ -28,16 +29,13 @@ export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUp
   const initializePayment = usePaystackPayment(config);
 
   const handleSuccess = (reference) => {
-    // 1. Tell App.jsx to fetch the new credit balance from the database
-    if (onTopUpSuccess) onTopUpSuccess(); 
-    
-    // 2. Instantly close the modal to return the user to the main workspace
+    if (onTopUpSuccess) onTopUpSuccess();
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 w-full max-w-md rounded-3xl p-6 shadow-2xl relative">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 w-full max-w-md rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
         <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 transition-colors">
           <X size={20} />
         </button>
@@ -90,6 +88,12 @@ export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUp
             Pay with Paystack
           </button>
         </div>
+
+        {/* PROMO CODE REDEMPTION SECTION */}
+        <div className="mt-6 pt-2 border-t border-gray-200 dark:border-gray-800">
+          <RedeemCoupon authSession={authSession} onSuccess={onTopUpSuccess} />
+        </div>
+
       </div>
     </div>
   );
