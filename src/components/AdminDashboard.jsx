@@ -347,7 +347,7 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
                   </div>
                 </div>
 
-                <button type="submit" disabled={couponLoading} className="w-full py-3.5 sm:py-4 mt-4 bg-linear-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50">
+                <button type="submit" disabled={couponLoading} className="w-full py-3.5 sm:py-4 mt-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50">
                   {couponLoading ? <Loader2 className="animate-spin" size={20} /> : <><Plus size={20} /> Deploy Coupon</>}
                 </button>
               </form>

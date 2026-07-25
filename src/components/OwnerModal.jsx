@@ -28,7 +28,7 @@ export default function OwnerModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-md p-0 sm:p-4 transition-all duration-300">
-      <div className="bg-linear-to-b from-slate-900 to-slate-950 text-white w-full max-w-3xl rounded-t-3xl sm:rounded-3xl border border-slate-800 shadow-2xl flex flex-col h-[85dvh] sm:max-h-[90vh]">
+      <div className="bg-gradient-to-b from-slate-900 to-slate-950 text-white w-full max-w-3xl rounded-t-3xl sm:rounded-3xl border border-slate-800 shadow-2xl flex flex-col h-[85dvh] sm:max-h-[90vh]">
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/80 bg-slate-900/80 shrink-0 rounded-t-3xl">

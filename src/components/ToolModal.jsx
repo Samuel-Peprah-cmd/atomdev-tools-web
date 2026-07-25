@@ -142,7 +142,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/80">
-          <h2 className="text-lg font-bold bg-linear-to-r from-blue-400 via-cyan-400 to-teal-300 bg-clip-text text-transparent">
+          <h2 className="text-lg font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-300 bg-clip-text text-transparent">
             AtomDev Tools Suite
           </h2>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
@@ -159,7 +159,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                 onClick={() => setActiveCategory(cat)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
                   activeCategory === cat
-                    ? 'bg-linear-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/20'
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/20'
                     : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                 }`}
               >
@@ -181,7 +181,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                     className="relative flex flex-col text-left p-4 rounded-2xl border border-slate-800 bg-slate-800/30 hover:bg-slate-800/80 hover:border-cyan-500/50 transition-all duration-300 group"
                   >
                     {t.tag && <span className={`absolute top-4 right-4 px-2 py-0.5 rounded-full text-[10px] font-bold border ${t.tagColor}`}>{t.tag}</span>}
-                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-500/25 to-cyan-500/25 border border-cyan-500/30 text-cyan-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/25 to-cyan-500/25 border border-cyan-500/30 text-cyan-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                       <Icon size={20} />
                     </div>
                     <span className="font-semibold text-slate-200 text-sm mb-1">{t.name}</span>
@@ -341,7 +341,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                 </div>
               )}
 
-              <button type="submit" className="w-full py-3.5 bg-linear-to-r from-blue-600 via-cyan-500 to-teal-400 text-white font-semibold text-sm rounded-xl shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-all duration-300">
+              <button type="submit" className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 text-white font-semibold text-sm rounded-xl shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-all duration-300">
                 Execute Job
               </button>
             </div>
