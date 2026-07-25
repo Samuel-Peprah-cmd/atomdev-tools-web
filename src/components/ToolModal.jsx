@@ -80,6 +80,21 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
     e.preventDefault();
     if (!selectedTool) return;
     
+    // --- NEW: CLOUDFLARE 100MB LIMIT CHECK ---
+    const MAX_FILE_SIZE = 95 * 1024 * 1024; // 95 Megabytes
+    if (file && file.size > MAX_FILE_SIZE) {
+      alert(`This file is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). The maximum upload limit is 95MB. Please compress the video or upload a smaller file.`);
+      return;
+    }
+    
+    if (files && files.length > 0) {
+      const totalSize = files.reduce((acc, curr) => acc + curr.size, 0);
+      if (totalSize > MAX_FILE_SIZE) {
+        alert(`These files are too large combined (${(totalSize / 1024 / 1024).toFixed(1)}MB). The maximum batch upload limit is 95MB.`);
+        return;
+      }
+    }
+    
     const options = {};
     if (selectedTool === 'docx_to_pptx' || selectedTool === 'pdf_to_pptx') options.theme_name = theme;
     if (selectedTool === 'convert_image') options.format = imageFormat;
