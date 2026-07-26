@@ -106,7 +106,7 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
 
       setCouponMessage({ type: 'success', text: `Success! Coupon ${couponCode} created.` });
       setCouponCode('');
-      fetchCoupons(); // Refresh the list
+      fetchCoupons(); // Refresh the active list
     } catch (err) {
       setCouponMessage({ type: 'error', text: err.message });
     } finally {
@@ -121,7 +121,7 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
         method: 'DELETE',
         headers: { 'X-API-Key': import.meta.env.VITE_ATOMDEV_API_KEY, 'Authorization': `Bearer ${authSession.access_token}` }
       });
-      fetchCoupons();
+      fetchCoupons(); // Refresh list after deletion
     } catch (err) {
       alert("Failed to delete coupon");
     }
@@ -156,7 +156,6 @@ export default function AdminDashboard({ isOpen, onClose, authSession }) {
   const now = new Date();
 
   return (
-    // FIX: Removed padding on mobile (p-0) so the modal consumes 100dvh (Dynamic Viewport Height) natively without browser bar conflicts.
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-0 sm:p-4 transition-all duration-300">
       <div className="bg-slate-950 border-0 sm:border border-slate-800 w-full max-w-6xl h-[100dvh] sm:h-[90vh] rounded-none sm:rounded-3xl shadow-2xl flex flex-col md:flex-row overflow-hidden relative">
         
