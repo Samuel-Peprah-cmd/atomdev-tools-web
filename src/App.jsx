@@ -20,9 +20,11 @@ const createSession = () => ({
   messages: [],
 });
 
-const getStoredSessions = () => {
+// 1. UPDATE THIS FUNCTION to accept a userId
+const getStoredSessions = (userId) => {
   try {
-    const saved = localStorage.getItem('atomdev-sessions');
+    const storageKey = userId ? `atomdev-sessions-${userId}` : 'atomdev-sessions-anon';
+    const saved = localStorage.getItem(storageKey);
     const parsed = saved ? JSON.parse(saved) : null;
     if (Array.isArray(parsed) && parsed.length > 0) {
       return parsed.map((session) => ({
@@ -96,7 +98,7 @@ export default function App() {
   // Hidden Admin Trigger State
   const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
 
-  const [sessions, setSessions] = useState(getStoredSessions);
+  const [sessions, setSessions] = useState(() => getStoredSessions(null));
   const [activeSessionId, setActiveSessionId] = useState(sessions[0]?.id);
   const [inputText, setInputText] = useState('');
   
@@ -150,12 +152,21 @@ export default function App() {
   }, [isDarkMode]);
 
   useEffect(() => {
+    const userId = authSession?.user?.id || null;
+    const userSessions = getStoredSessions(userId);
+    setSessions(userSessions);
+    setActiveSessionId(userSessions[0]?.id);
+  }, [authSession?.user?.id]);
+
+  useEffect(() => {
     try {
-      localStorage.setItem('atomdev-sessions', JSON.stringify(sessions));
+      const userId = authSession?.user?.id || null;
+      const storageKey = userId ? `atomdev-sessions-${userId}` : 'atomdev-sessions-anon';
+      localStorage.setItem(storageKey, JSON.stringify(sessions));
     } catch (error) {
       console.warn('Unable to save workspaces locally.', error);
     }
-  }, [sessions]);
+  }, [sessions, authSession?.user?.id]);
 
   useEffect(() => {
     const desktopQuery = window.matchMedia('(min-width: 768px)');

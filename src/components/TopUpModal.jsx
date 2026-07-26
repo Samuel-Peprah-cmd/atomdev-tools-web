@@ -29,7 +29,10 @@ export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUp
   const initializePayment = usePaystackPayment(config);
 
   const handleSuccess = (reference) => {
-    if (onTopUpSuccess) onTopUpSuccess();
+    // Add a 3 second delay to allow the server webhook to process the data
+    setTimeout(() => {
+      if (onTopUpSuccess) onTopUpSuccess();
+    }, 3000);
     onClose();
   };
 
