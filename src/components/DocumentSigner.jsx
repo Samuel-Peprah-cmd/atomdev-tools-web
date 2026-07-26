@@ -3,8 +3,8 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import Draggable from 'react-draggable';
 import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import SignaturePad from './SignaturePad';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 
 // Configure the PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
