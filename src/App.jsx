@@ -119,10 +119,25 @@ export default function App() {
   const fetchUserCredits = async (userId) => {
     if (!userId) return;
     try {
-      const { data, error } = await supabase.from('user_profiles').select('credits').eq('user_id', userId).single();
-      if (data) setCredits(data.credits);
+      // FIX: Use .maybeSingle() to prevent 406 errors when a new user has 0 rows
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('credits')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (error) throw error;
+
+      // If they have a profile, set their credits. If not, default to the starting 10.
+      if (data) {
+        setCredits(data.credits);
+      } else {
+        setCredits(10);
+      }
     } catch (err) {
-      console.warn("Could not fetch credits:", err);
+      console.warn("Could not fetch credits:", err.message);
+      // Failsafe fallback
+      setCredits(10);
     }
   };
 
