@@ -29,11 +29,14 @@ export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUp
   const initializePayment = usePaystackPayment(config);
 
   const handleSuccess = (reference) => {
-    // Add a 3 second delay to allow the server webhook to process the data
-    setTimeout(() => {
-      if (onTopUpSuccess) onTopUpSuccess();
-    }, 3000);
+    // 1. Close the modal instantly so the user knows the payment UI is done
     onClose();
+    
+    // 2. Give the webhook 2 seconds to update the Supabase database, 
+    // then force a hard browser refresh back to the main page.
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 2000);
   };
 
   return (
@@ -95,7 +98,7 @@ export default function TopUpModal({ isOpen, onClose, userId, userEmail, onTopUp
 
         {/* PROMO CODE REDEMPTION SECTION */}
         <div className="mt-6 pt-2 border-t border-gray-200 dark:border-gray-800">
-          <RedeemCoupon authSession={authSession} onSuccess={onTopUpSuccess} />
+          <RedeemCoupon authSession={authSession} onSuccess={() => window.location.href = '/'} />
         </div>
 
       </div>
