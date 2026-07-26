@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import DocumentSigner from './DocumentSigner';
 import {
   X, Upload, FileAudio, Video, FileText, Image as ImageIcon,
   Presentation, Table, FileArchive, Palette, Clock, Cpu,
-  Scissors, ImageMinus, Globe2
+  Scissors, ImageMinus, Globe2, Pencil, CheckCircle2
 } from 'lucide-react';
 
 export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
@@ -20,6 +21,8 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
   const [startPage, setStartPage] = useState(1);
   const [endPage, setEndPage] = useState(1);
   const [bgColor, setBgColor] = useState('transparent');
+  const [signatureDataUrl, setSignatureDataUrl] = useState(null);
+  const [signatureOptions, setSignatureOptions] = useState({});
 
   if (!isOpen) return null;
 
@@ -53,6 +56,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
     { id: 'split_pdf', name: 'Extract Pages (Split PDF)', category: 'Documents', icon: Scissors, desc: 'Pull a specific page range from a PDF' },
     { id: 'compress_pdf', name: 'Compress PDF', category: 'Documents', icon: FileArchive, desc: 'Drastically reduce PDF file size for emailing' },
     { id: 'compress_docx', name: 'Compress Word Doc', category: 'Documents', icon: FileText, desc: 'Reduce the file size of heavy .docx files' },
+    { id: 'sign_document', name: 'E-Sign Document', category: 'Documents', icon: Pencil, desc: 'Draw a transparent signature and stamp it on a PDF or Word doc' },
 
     // Spreadsheets
     { id: 'csv_to_xlsx', name: 'CSV to Excel', category: 'Spreadsheets', icon: Table, desc: 'Convert raw CSV into formatted Excel (.xls/.xlsx)' },
@@ -74,7 +78,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
   if (selectedTool === 'merge_pdfs' || selectedTool === 'split_pdf') acceptTypes = '.pdf';
   else if (selectedTool === 'remove_background' || selectedTool === 'convert_image' || selectedTool === 'grayscale_image' || selectedTool === 'compress_image') acceptTypes = 'image/*';
   else if (selectedTool === 'transcribe_audio' || selectedTool === 'transcribe_with_speakers' || selectedTool === 'extract_audio_from_video' || selectedTool === 'video_to_animated') acceptTypes = 'audio/*,video/*';
-  else if (selectedTool === 'docx_to_pptx' || selectedTool === 'docx_to_pdf' || selectedTool === 'compress_docx') acceptTypes = '.doc,.docx';
+  else if (selectedTool === 'docx_to_pptx' || selectedTool === 'docx_to_pdf' || selectedTool === 'compress_docx' || selectedTool === 'sign_document') acceptTypes = '.pdf,.doc,.docx';
   else if (selectedTool === 'csv_to_xlsx') acceptTypes = '.csv';
   else if (selectedTool === 'xlsx_to_csv') acceptTypes = '.xls,.xlsx';
   else if (selectedTool === 'pptx_to_docx') acceptTypes = '.ppt,.pptx';
@@ -120,19 +124,24 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
       options.end_page = endPage;
     }
 
+    
+
+    const finalOptions = { ...options, ...signatureOptions };
+
     onSubmitJob({
       tool: selectedTool,
       file: selectedTool === 'merge_pdfs' ? null : file,
       files: selectedTool === 'merge_pdfs' ? files : null,
       url,
-      options
+      options: finalOptions
     });
-
+    
     setSelectedTool(null);
     setFile(null);
     setFiles([]);
     setUrl('');
     setTranslateToEnglish(false);
+    setSignatureOptions({}); // Reset the new state
     onClose();
   };
 
@@ -325,6 +334,28 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                     <input type="number" min="1" value={endPage} onChange={(e) => setEndPage(e.target.value)} className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-200 outline-none focus:ring-2 focus:ring-cyan-500" />
                   </div>
                 </div>
+              )}
+
+              {/* Visual PDF Engine */}
+              {selectedTool === 'sign_document' && (
+                <DocumentSigner 
+                  file={file} 
+                  onSignatureReady={(sigOpts) => setSignatureOptions(sigOpts)} 
+                />
+              )}
+
+              {/* Only show the Execute button if we ARE NOT in the visual signer (the signer has its own confirm button) */}
+              {selectedTool !== 'sign_document' && (
+                <button type="submit" className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 text-white font-semibold text-sm rounded-xl shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-all duration-300">
+                  Execute Job
+                </button>
+              )}
+
+              {/* Show Execute button for Signer ONLY after coordinates are locked */}
+              {selectedTool === 'sign_document' && Object.keys(signatureOptions).length > 0 && (
+                <button type="submit" className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/20 hover:opacity-90 transition-all duration-300">
+                  Execute Cryptographic Stamp
+                </button>
               )}
 
               {/* Whisper Model Tier (With RAM Warnings) */}
