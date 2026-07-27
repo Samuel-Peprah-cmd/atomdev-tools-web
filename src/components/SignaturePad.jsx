@@ -8,16 +8,22 @@ const PEN_COLORS = [
   { name: 'Deep Red', value: '#8b0000' },
 ];
 
+const PEN_SIZES = [
+  { name: 'Fine', value: 2 },
+  { name: 'Normal', value: 4 },
+  { name: 'Bold', value: 7 },
+];
+
 export default function SignaturePad({ onSave }) {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [penColor, setPenColor] = useState(PEN_COLORS[0].value);
+  const [penSize, setPenSize] = useState(PEN_SIZES[1].value); // Default to Normal
   const [hasDrawn, setHasDrawn] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
   }, []);
@@ -32,7 +38,13 @@ export default function SignaturePad({ onSave }) {
     e.preventDefault();
     const ctx = canvasRef.current.getContext('2d');
     const { x, y } = getPos(e);
+    
+    // Apply dynamic color and thickness
     ctx.strokeStyle = penColor;
+    ctx.lineWidth = penSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
     ctx.beginPath();
     ctx.moveTo(x, y);
     setIsDrawing(true);
@@ -77,27 +89,50 @@ export default function SignaturePad({ onSave }) {
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg">
       <h3 className="text-white font-bold mb-4">Draw Your Signature</h3>
 
-      <div className="flex gap-2 mb-4">
-        {PEN_COLORS.map((c) => (
-          <button
-            key={c.value}
-            onClick={() => setPenColor(c.value)}
-            title={c.name}
-            className={`w-8 h-8 rounded-full border-2 transition-transform ${penColor === c.value ? 'scale-110 border-cyan-400' : 'border-slate-700'}`}
-            style={{ backgroundColor: c.value }}
-            type="button"
+      {/* Toolbar: Colors and Thickness */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        
+        {/* Color Picker */}
+        <div className="flex gap-2">
+          {PEN_COLORS.map((c) => (
+            <button
+              key={c.value}
+              onClick={() => setPenColor(c.value)}
+              title={c.name}
+              className={`w-8 h-8 rounded-full border-2 transition-transform ${penColor === c.value ? 'scale-110 border-cyan-400' : 'border-slate-700'}`}
+              style={{ backgroundColor: c.value }}
+              type="button"
+            />
+          ))}
+          <input
+            type="color"
+            value={penColor}
+            onChange={(e) => setPenColor(e.target.value)}
+            className="w-8 h-8 rounded-full cursor-pointer bg-transparent border-2 border-slate-700"
+            title="Custom color"
           />
-        ))}
-        <input
-          type="color"
-          value={penColor}
-          onChange={(e) => setPenColor(e.target.value)}
-          className="w-8 h-8 rounded-full cursor-pointer bg-transparent border-2 border-slate-700"
-          title="Custom color"
-        />
+        </div>
+
+        {/* Thickness Picker */}
+        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+          {PEN_SIZES.map((size) => (
+            <button
+              key={size.name}
+              type="button"
+              onClick={() => setPenSize(size.value)}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                penSize === size.value 
+                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50' 
+                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
+              }`}
+            >
+              {size.name}
+            </button>
+          ))}
+        </div>
+
       </div>
 
-      {/* FIXED: Removed the dark checkerboard and added a crisp white background */}
       <div className="rounded-xl overflow-hidden border-2 border-slate-300 dark:border-slate-600 bg-white relative shadow-inner">
         <canvas
           ref={canvasRef}
