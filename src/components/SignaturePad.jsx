@@ -56,7 +56,7 @@ export default function SignaturePad({ onSave }) {
     setHasDrawn(false);
   };
 
-  // NEW: Download as a standalone PNG
+  // Download as a standalone PNG
   const downloadSignature = () => {
     if (!hasDrawn) return;
     const dataUrl = canvasRef.current.toDataURL('image/png');
@@ -97,14 +97,8 @@ export default function SignaturePad({ onSave }) {
         />
       </div>
 
-      <div
-        className="rounded-xl overflow-hidden border border-slate-700 relative"
-        style={{
-          backgroundImage: 'linear-gradient(45deg, #333 25%, transparent 25%), linear-gradient(-45deg, #333 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #333 75%), linear-gradient(-45deg, transparent 75%, #333 75%)',
-          backgroundSize: '16px 16px',
-          backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
-        }}
-      >
+      {/* FIXED: Removed the dark checkerboard and added a crisp white background */}
+      <div className="rounded-xl overflow-hidden border-2 border-slate-300 dark:border-slate-600 bg-white relative shadow-inner">
         <canvas
           ref={canvasRef}
           width={460}

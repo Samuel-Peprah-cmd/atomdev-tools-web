@@ -100,7 +100,7 @@ export default function DocumentSigner({ file, onSignatureReady }) {
 
             {/* Draggable Signature Overlay */}
             {pdfDim.width > 0 && (
-              <Draggable bounds="parent" position={dragPos} onStop={handleDragStop}>
+              <Draggable bounds="parent" defaultPosition={{ x: 50, y: 50 }} onStop={handleDragStop}>
                 <div 
                   className="absolute cursor-move border-2 border-dashed border-cyan-500 bg-cyan-500/10 rounded-lg flex items-center justify-center shadow-lg"
                   style={{ width: sigWidth, height: sigHeight }}
