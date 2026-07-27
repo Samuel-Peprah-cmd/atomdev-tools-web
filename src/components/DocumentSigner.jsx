@@ -17,6 +17,7 @@ export default function DocumentSigner({ file, onSignatureReady }) {
   // Dimensions and Positioning
   const [pdfDim, setPdfDim] = useState({ width: 0, height: 0 });
   const [dragPos, setDragPos] = useState({ x: 50, y: 50 }); // DOM coordinates
+  const nodeRef = useRef(null);
   const sigWidth = 150;
   const sigHeight = 60;
 
@@ -87,29 +88,38 @@ export default function DocumentSigner({ file, onSignatureReady }) {
           </div>
 
           {/* PDF Visual Engine Canvas */}
-          <div className="relative border border-slate-700 bg-slate-950 overflow-auto max-h-[500px] custom-scrollbar rounded-xl flex justify-center shadow-inner">
-            <Document file={file} onLoadSuccess={onDocumentLoadSuccess} loading={<div className="p-10 text-cyan-500 animate-pulse">Loading Document Engine...</div>}>
-              <Page 
-                pageNumber={pageNumber} 
-                renderTextLayer={false} 
-                renderAnnotationLayer={false}
-                onLoadSuccess={onPageLoadSuccess}
-                className="shadow-2xl"
-              />
-            </Document>
+          <div className="relative border border-slate-700 bg-slate-950 overflow-auto max-h-[500px] custom-scrollbar rounded-xl flex justify-center shadow-inner p-4">
+            
+            {/* 
+              By wrapping the Document and Draggable in this exact-width relative container, 
+              we ensure the drag bounds are perfectly tied to the edges of the PDF page, 
+              and the backend stamping math is 100% accurate. 
+            */}
+            <div className="relative inline-block bg-white shadow-2xl" style={{ width: pdfDim.width > 0 ? pdfDim.width : 'auto' }}>
+              <Document file={file} onLoadSuccess={onDocumentLoadSuccess} loading={<div className="p-10 text-cyan-500 animate-pulse">Loading Document Engine...</div>}>
+                <Page 
+                  pageNumber={pageNumber} 
+                  renderTextLayer={false} 
+                  renderAnnotationLayer={false}
+                  onLoadSuccess={onPageLoadSuccess}
+                />
+              </Document>
 
-            {/* Draggable Signature Overlay */}
-            {pdfDim.width > 0 && (
-              <Draggable bounds="parent" defaultPosition={{ x: 50, y: 50 }} onStop={handleDragStop}>
-                <div 
-                  className="absolute cursor-move border-2 border-dashed border-cyan-500 bg-cyan-500/10 rounded-lg flex items-center justify-center shadow-lg"
-                  style={{ width: sigWidth, height: sigHeight }}
-                  title="Drag me to place your signature"
-                >
-                  <img src={signatureUrl} alt="Your Signature" className="w-full h-full object-contain pointer-events-none" />
-                </div>
-              </Draggable>
-            )}
+              {/* Draggable Signature Overlay */}
+              {pdfDim.width > 0 && (
+                <Draggable nodeRef={nodeRef} bounds="parent" defaultPosition={{ x: 10, y: 10 }} onStop={handleDragStop}>
+                  <div 
+                    ref={nodeRef}
+                    className="absolute top-0 left-0 z-50 cursor-move border-2 border-dashed border-cyan-500 bg-cyan-500/20 rounded-lg flex items-center justify-center shadow-lg touch-none"
+                    style={{ width: sigWidth, height: sigHeight }}
+                    title="Drag me to place your signature"
+                  >
+                    <img src={signatureUrl} alt="Your Signature" className="w-full h-full object-contain pointer-events-none" />
+                  </div>
+                </Draggable>
+              )}
+            </div>
+
           </div>
 
           <button type="button" onClick={confirmPlacement} className="w-full mt-6 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/50 transition-colors">
