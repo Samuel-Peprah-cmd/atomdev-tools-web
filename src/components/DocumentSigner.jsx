@@ -80,9 +80,9 @@ export default function DocumentSigner({ file, onSignatureReady }) {
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-white">Position Your Signature</h3>
             <div className="flex items-center gap-4 bg-slate-800 px-4 py-1.5 rounded-full">
-              <button disabled={pageNumber <= 1} onClick={() => setPageNumber(p => p - 1)} className="text-slate-400 hover:text-white disabled:opacity-30"><ChevronLeft size={20}/></button>
+              <button type="button" disabled={pageNumber <= 1} onClick={() => setPageNumber(p => p - 1)} className="text-slate-400 hover:text-white disabled:opacity-30"><ChevronLeft size={20}/></button>
               <span className="text-xs font-semibold text-slate-300">Page {pageNumber} of {numPages}</span>
-              <button disabled={pageNumber >= numPages} onClick={() => setPageNumber(p => p + 1)} className="text-slate-400 hover:text-white disabled:opacity-30"><ChevronRight size={20}/></button>
+              <button type="button" disabled={pageNumber >= numPages} onClick={() => setPageNumber(p => p + 1)} className="text-slate-400 hover:text-white disabled:opacity-30"><ChevronRight size={20}/></button>
             </div>
           </div>
 
@@ -112,7 +112,7 @@ export default function DocumentSigner({ file, onSignatureReady }) {
             )}
           </div>
 
-          <button onClick={confirmPlacement} className="w-full mt-6 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/50 transition-colors">
+          <button type="button" onClick={confirmPlacement} className="w-full mt-6 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/50 transition-colors">
             <CheckCircle2 size={18} /> Confirm Placement & Lock Document
           </button>
         </div>
@@ -124,7 +124,7 @@ export default function DocumentSigner({ file, onSignatureReady }) {
           <CheckCircle2 size={32} className="mx-auto text-emerald-400 mb-3" />
           <h3 className="font-bold text-white mb-2">Signature Locked!</h3>
           <p className="text-sm text-slate-400 mb-6">Word Document detected. The engine will automatically stamp your signature at the end of the document.</p>
-          <button onClick={confirmPlacement} className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg transition-colors">
+          <button type="button" onClick={confirmPlacement} className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg transition-colors">
             Process Word Document
           </button>
         </div>
