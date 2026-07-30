@@ -133,8 +133,17 @@ export default function DocumentSigner({ file, onSignatureReady }) {
         <div className="bg-slate-800 p-6 rounded-2xl text-center border border-slate-700">
           <CheckCircle2 size={32} className="mx-auto text-emerald-400 mb-3" />
           <h3 className="font-bold text-white mb-2">Signature Locked!</h3>
-          <p className="text-sm text-slate-400 mb-6">Word Document detected. The engine will automatically stamp your signature at the end of the document.</p>
-          <button type="button" onClick={confirmPlacement} className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg transition-colors">
+          <p className="text-sm text-slate-400 mb-4">Word Document detected.</p>
+          
+          <div className="bg-slate-900 border border-slate-700 p-4 rounded-xl mb-6 text-left">
+            <p className="text-xs text-slate-300 font-semibold mb-2">How placement works for Word:</p>
+            <ul className="text-xs text-slate-400 space-y-2 list-disc pl-4">
+              <li><strong>Specific Placement:</strong> Type exactly <code className="bg-slate-800 text-cyan-400 px-1 py-0.5 rounded font-mono">[SIGNATURE]</code> anywhere in your document before uploading. The engine will replace that exact word with your signature.</li>
+              <li><strong>Default Placement:</strong> If no placeholder is found, the engine will safely stamp it at the very bottom of the document.</li>
+            </ul>
+          </div>
+
+          <button type="button" onClick={confirmPlacement} className="w-full px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg transition-colors">
             Process Word Document
           </button>
         </div>
