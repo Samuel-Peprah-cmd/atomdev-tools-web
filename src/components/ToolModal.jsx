@@ -22,6 +22,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
   const [startPage, setStartPage] = useState(1);
   const [endPage, setEndPage] = useState(1);
   const [bgColor, setBgColor] = useState('transparent');
+  const [signatureDataUrl, setSignatureDataUrl] = useState(null);
   const [signatureOptions, setSignatureOptions] = useState({});
 
   if (!isOpen) return null;
@@ -64,6 +65,7 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
   const categories = ['All', 'Presentations', 'Documents', 'Media', 'Spreadsheets', 'Images'];
   const filteredTools = activeCategory === 'All' ? tools : tools.filter(t => t.category === activeCategory);
 
+  // Smart File Picker Logic
   let acceptTypes = '*/*';
   if (selectedTool === 'merge_pdfs' || selectedTool === 'split_pdf') acceptTypes = '.pdf';
   else if (selectedTool === 'remove_background' || selectedTool === 'convert_image' || selectedTool === 'grayscale_image' || selectedTool === 'compress_image') acceptTypes = 'image/*';
@@ -97,11 +99,13 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
     e.preventDefault();
     if (!selectedTool) return;
 
-    const MAX_FILE_SIZE = 95 * 1024 * 1024;
+    const MAX_FILE_SIZE = 95 * 1024 * 1024; // 95 Megabytes
+
     if (file && file.size > MAX_FILE_SIZE) {
       alert(`This file is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). The maximum upload limit is 95MB. Please compress the video or upload a smaller file.`);
       return;
     }
+
     if (files && files.length > 0) {
       const totalSize = files.reduce((acc, curr) => acc + curr.size, 0);
       if (totalSize > MAX_FILE_SIZE) {
@@ -112,15 +116,20 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
 
     const options = {};
     if (selectedTool === 'docx_to_pptx' || selectedTool === 'pdf_to_pptx') options.theme_name = theme;
+    
     if (selectedTool === 'convert_image' || selectedTool === 'video_to_animated') options.format = imageFormat;
+
     if (selectedTool === 'transcribe_audio') {
       options.model_size = modelSize;
       if (translateToEnglish) options.task = 'translate';
     }
+
     if (selectedTool === 'transcribe_with_speakers') options.model_size = modelSize;
+
     if (selectedTool === 'remove_background') {
       options.bg_color = bgColor === 'transparent' ? '' : bgColor;
     }
+
     if (selectedTool === 'split_pdf') {
       options.start_page = startPage;
       options.end_page = endPage;
@@ -135,13 +144,13 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
       url,
       options: finalOptions
     });
-
+    
     setSelectedTool(null);
     setFile(null);
     setFiles([]);
     setUrl('');
     setTranslateToEnglish(false);
-    setSignatureOptions({});
+    setSignatureOptions({}); // Reset the new state
     onClose();
   };
 
@@ -225,7 +234,6 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                   <label className="block text-xs font-medium text-slate-300 mb-1.5">
                     {selectedTool === 'merge_pdfs' ? 'Upload PDF Files (You can click multiple times to add more)' : 'Upload Source File'}
                   </label>
-                  
                   <div className="border-2 border-dashed border-slate-700 hover:border-cyan-500/50 bg-slate-800/30 rounded-2xl p-6 text-center transition-colors relative">
                     <Upload className="mx-auto text-cyan-400 mb-2" size={28} />
                     <span className="text-xs text-slate-300 block font-medium">
@@ -235,13 +243,18 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                       type="file" multiple={selectedTool === 'merge_pdfs'}
                       accept={acceptTypes}
                       onChange={(e) => { 
+                        // 1. Capture the files instantly before doing anything else
+                        const selected = Array.from(e.target.files);
+                        if (selected.length === 0) return;
+
+                        // 2. Pass the captured files to React's state
                         if (selectedTool === 'merge_pdfs') {
-                          // Append new files to the existing array
-                          setFiles(prev => [...prev, ...Array.from(e.target.files)]);
+                          setFiles(prev => [...prev, ...selected]);
                         } else {
-                          setFile(e.target.files[0]);
+                          setFile(selected[0]);
                         }
-                        // Reset input so the exact same file can be clicked again if needed
+                        
+                        // 3. Safely reset the input now that the files are saved in memory
                         e.target.value = null; 
                       }}
                       className="absolute inset-0 opacity-0 cursor-pointer"
@@ -270,7 +283,6 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                     </div>
                   )}
                   {/* ================================= */}
-
                 </div>
               )}
 
@@ -378,9 +390,13 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                 />
               )}
 
-              {/* Only show the Execute button if we ARE NOT in the visual signer (the signer has its own confirm button) */}
+              {/* Show Execute button for normal tools */}
               {selectedTool !== 'sign_document' && (
-                <button type="submit" disabled={selectedTool === 'merge_pdfs' && files.length < 2} className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 disabled:opacity-50 disabled:grayscale text-white font-semibold text-sm rounded-xl shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-all duration-300">
+                <button 
+                  type="submit" 
+                  disabled={selectedTool === 'merge_pdfs' && files.length < 2} 
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 disabled:opacity-50 disabled:grayscale text-white font-semibold text-sm rounded-xl shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-all duration-300"
+                >
                   {selectedTool === 'merge_pdfs' && files.length < 2 ? 'Add at least 2 PDFs' : 'Execute Job'}
                 </button>
               )}
