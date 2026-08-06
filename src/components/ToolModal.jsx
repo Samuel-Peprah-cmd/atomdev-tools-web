@@ -3,7 +3,8 @@ import DocumentSigner from './DocumentSigner';
 import {
   X, Upload, FileAudio, Video, FileText, Image as ImageIcon,
   Presentation, Table, FileArchive, Palette, Clock, Cpu,
-  Scissors, ImageMinus, Globe2, Pencil, CheckCircle2
+  Scissors, ImageMinus, Globe2, Pencil, CheckCircle2,
+  ArrowUp, ArrowDown, Trash2
 } from 'lucide-react';
 
 export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
@@ -21,23 +22,14 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
   const [startPage, setStartPage] = useState(1);
   const [endPage, setEndPage] = useState(1);
   const [bgColor, setBgColor] = useState('transparent');
-  const [signatureDataUrl, setSignatureDataUrl] = useState(null);
   const [signatureOptions, setSignatureOptions] = useState({});
 
   if (!isOpen) return null;
 
   const tools = [
     // Media & Audio/Video
-    {
-      id: 'transcribe_audio', name: 'Standard Transcription', category: 'Media', icon: FileAudio,
-      desc: 'Extract text from ANY audio/video format. Supports AI translation.',
-      tag: '  Fast', tagColor: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
-    },
-    {
-      id: 'transcribe_with_speakers', name: 'Speaker Diarization', category: 'Media', icon: FileAudio,
-      desc: 'Transcribe ANY audio/video with detailed speaker annotations',
-      tag: '  Slower', tagColor: 'text-amber-400 bg-amber-400/10 border-amber-400/20'
-    },
+    { id: 'transcribe_audio', name: 'Standard Transcription', category: 'Media', icon: FileAudio, desc: 'Extract text from ANY audio/video format. Supports AI translation.', tag: '⚡ Fast', tagColor: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
+    { id: 'transcribe_with_speakers', name: 'Speaker Diarization', category: 'Media', icon: FileAudio, desc: 'Transcribe ANY audio/video with detailed speaker annotations', tag: '🐢 Slower', tagColor: 'text-amber-400 bg-amber-400/10 border-amber-400/20' },
     { id: 'download_video', name: 'Web Video Downloader', category: 'Media', icon: Video, desc: 'Download videos from YouTube, TikTok, IG, X' },
     { id: 'extract_audio_from_video', name: 'Extract Audio (MP3)', category: 'Media', icon: FileAudio, desc: 'Pull audio track from ANY video format (MP4, MKV, AVI)' },
     { id: 'video_to_animated', name: 'Video to GIF / Sticker', category: 'Media', icon: Video, desc: 'Turn any short video into an animated GIF or WebP sticker' },
@@ -70,10 +62,8 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
   ];
 
   const categories = ['All', 'Presentations', 'Documents', 'Media', 'Spreadsheets', 'Images'];
-
   const filteredTools = activeCategory === 'All' ? tools : tools.filter(t => t.category === activeCategory);
 
-  // Smart File Picker Logic
   let acceptTypes = '*/*';
   if (selectedTool === 'merge_pdfs' || selectedTool === 'split_pdf') acceptTypes = '.pdf';
   else if (selectedTool === 'remove_background' || selectedTool === 'convert_image' || selectedTool === 'grayscale_image' || selectedTool === 'compress_image') acceptTypes = 'image/*';
@@ -83,18 +73,35 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
   else if (selectedTool === 'xlsx_to_csv') acceptTypes = '.xls,.xlsx';
   else if (selectedTool === 'pptx_to_docx') acceptTypes = '.ppt,.pptx';
 
+  // --- PDF ARRANGEMENT LOGIC ---
+  const moveFileUp = (index) => {
+    if (index === 0) return;
+    const newFiles = [...files];
+    [newFiles[index - 1], newFiles[index]] = [newFiles[index], newFiles[index - 1]];
+    setFiles(newFiles);
+  };
+
+  const moveFileDown = (index) => {
+    if (index === files.length - 1) return;
+    const newFiles = [...files];
+    [newFiles[index + 1], newFiles[index]] = [newFiles[index], newFiles[index + 1]];
+    setFiles(newFiles);
+  };
+
+  const removeFile = (index) => {
+    setFiles(files.filter((_, i) => i !== index));
+  };
+  // -----------------------------
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!selectedTool) return;
 
-    // --- NEW: CLOUDFLARE 100MB LIMIT CHECK ---
-    const MAX_FILE_SIZE = 95 * 1024 * 1024; // 95 Megabytes
-
+    const MAX_FILE_SIZE = 95 * 1024 * 1024;
     if (file && file.size > MAX_FILE_SIZE) {
       alert(`This file is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). The maximum upload limit is 95MB. Please compress the video or upload a smaller file.`);
       return;
     }
-
     if (files && files.length > 0) {
       const totalSize = files.reduce((acc, curr) => acc + curr.size, 0);
       if (totalSize > MAX_FILE_SIZE) {
@@ -105,26 +112,19 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
 
     const options = {};
     if (selectedTool === 'docx_to_pptx' || selectedTool === 'pdf_to_pptx') options.theme_name = theme;
-    
     if (selectedTool === 'convert_image' || selectedTool === 'video_to_animated') options.format = imageFormat;
-
     if (selectedTool === 'transcribe_audio') {
       options.model_size = modelSize;
       if (translateToEnglish) options.task = 'translate';
     }
-
     if (selectedTool === 'transcribe_with_speakers') options.model_size = modelSize;
-
     if (selectedTool === 'remove_background') {
       options.bg_color = bgColor === 'transparent' ? '' : bgColor;
     }
-
     if (selectedTool === 'split_pdf') {
       options.start_page = startPage;
       options.end_page = endPage;
     }
-
-    
 
     const finalOptions = { ...options, ...signatureOptions };
 
@@ -135,13 +135,13 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
       url,
       options: finalOptions
     });
-    
+
     setSelectedTool(null);
     setFile(null);
     setFiles([]);
     setUrl('');
     setTranslateToEnglish(false);
-    setSignatureOptions({}); // Reset the new state
+    setSignatureOptions({});
     onClose();
   };
 
@@ -223,20 +223,54 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
               {selectedTool !== 'download_video' && (
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    {selectedTool === 'merge_pdfs' ? 'Upload PDF Files (Select Multiple)' : 'Upload Source File'}
+                    {selectedTool === 'merge_pdfs' ? 'Upload PDF Files (You can click multiple times to add more)' : 'Upload Source File'}
                   </label>
+                  
                   <div className="border-2 border-dashed border-slate-700 hover:border-cyan-500/50 bg-slate-800/30 rounded-2xl p-6 text-center transition-colors relative">
                     <Upload className="mx-auto text-cyan-400 mb-2" size={28} />
                     <span className="text-xs text-slate-300 block font-medium">
-                      {selectedTool === 'merge_pdfs' ? (files && files.length > 0 ? `${files.length} files selected` : 'Click or drop multiple PDFs here') : (file ? file.name : 'Click or drop your file here')}
+                      {selectedTool === 'merge_pdfs' ? 'Click to add PDFs to the merge queue' : (file ? file.name : 'Click or drop your file here')}
                     </span>
                     <input
                       type="file" multiple={selectedTool === 'merge_pdfs'}
                       accept={acceptTypes}
-                      onChange={(e) => { selectedTool === 'merge_pdfs' ? setFiles(Array.from(e.target.files)) : setFile(e.target.files[0]) }}
+                      onChange={(e) => { 
+                        if (selectedTool === 'merge_pdfs') {
+                          // Append new files to the existing array
+                          setFiles(prev => [...prev, ...Array.from(e.target.files)]);
+                        } else {
+                          setFile(e.target.files[0]);
+                        }
+                        // Reset input so the exact same file can be clicked again if needed
+                        e.target.value = null; 
+                      }}
                       className="absolute inset-0 opacity-0 cursor-pointer"
                     />
                   </div>
+
+                  {/* === NEW: PDF ARRANGEMENT LIST === */}
+                  {selectedTool === 'merge_pdfs' && files.length > 0 && (
+                    <div className="mt-4 space-y-2 animate-fade-in">
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Arrange Document Order (Top to Bottom)</label>
+                      <div className="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden max-h-48 overflow-y-auto custom-scrollbar">
+                        {files.map((f, i) => (
+                          <div key={`${f.name}-${i}`} className="flex items-center justify-between p-3 border-b border-slate-800 last:border-0 hover:bg-slate-800/50 transition-colors">
+                            <span className="text-sm font-semibold text-slate-200 truncate flex-1 pr-4">
+                              <span className="text-cyan-500 mr-2">{i + 1}.</span>{f.name}
+                            </span>
+                            <div className="flex items-center gap-1 shrink-0 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                              <button type="button" onClick={() => moveFileUp(i)} disabled={i === 0} className="p-1 text-slate-400 hover:text-cyan-400 disabled:opacity-30 rounded-md transition-colors"><ArrowUp size={16}/></button>
+                              <button type="button" onClick={() => moveFileDown(i)} disabled={i === files.length - 1} className="p-1 text-slate-400 hover:text-cyan-400 disabled:opacity-30 rounded-md transition-colors"><ArrowDown size={16}/></button>
+                              <div className="w-[1px] h-4 bg-slate-700 mx-1"></div>
+                              <button type="button" onClick={() => removeFile(i)} className="p-1 text-slate-400 hover:text-rose-400 rounded-md transition-colors"><Trash2 size={16}/></button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* ================================= */}
+
                 </div>
               )}
 
@@ -346,8 +380,8 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
 
               {/* Only show the Execute button if we ARE NOT in the visual signer (the signer has its own confirm button) */}
               {selectedTool !== 'sign_document' && (
-                <button type="submit" className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 text-white font-semibold text-sm rounded-xl shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-all duration-300">
-                  Execute Job
+                <button type="submit" disabled={selectedTool === 'merge_pdfs' && files.length < 2} className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 disabled:opacity-50 disabled:grayscale text-white font-semibold text-sm rounded-xl shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-all duration-300">
+                  {selectedTool === 'merge_pdfs' && files.length < 2 ? 'Add at least 2 PDFs' : 'Execute Job'}
                 </button>
               )}
 
@@ -372,9 +406,6 @@ export default function ToolModal({ isOpen, onClose, onSubmitJob }) {
                 </div>
               )}
 
-              <button type="submit" className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 text-white font-semibold text-sm rounded-xl shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-all duration-300">
-                Execute Job
-              </button>
             </div>
           )}
         </form>
