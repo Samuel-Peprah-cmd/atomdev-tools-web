@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Upload, Play, Pause, SkipBack, SkipForward, 
-  Settings, Loader2, Volume2, BookOpen, ChevronLeft, ChevronRight 
+  Settings, Loader2, Volume2, BookOpen, ChevronLeft, ChevronRight, Wand2 
 } from 'lucide-react';
 
 export default function SmartReader({ isOpen, onClose, authSession }) {
   const [file, setFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [pages, setPages] = useState([]);
-  const [currentPage, setCurrentPage] = useState(0); // 0-indexed internally
+  const [currentPage, setCurrentPage] = useState(0); 
+
+  // AI Reading Tone
+  const [readingTone, setReadingTone] = useState('literal');
 
   // Audio Engine State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -20,13 +23,12 @@ export default function SmartReader({ isOpen, onClose, authSession }) {
   const synth = window.speechSynthesis;
   const utteranceRef = useRef(null);
 
-  // Load Voices (Browsers load these asynchronously)
+  // Load Voices
   useEffect(() => {
     const loadVoices = () => {
       const availableVoices = synth.getVoices();
       if (availableVoices.length > 0) {
         setVoices(availableVoices);
-        // Default to a good English voice if available
         const defaultVoice = availableVoices.find(v => v.lang.includes('en') && v.name.includes('Google')) 
                           || availableVoices.find(v => v.lang.includes('en')) 
                           || availableVoices[0];
@@ -40,12 +42,17 @@ export default function SmartReader({ isOpen, onClose, authSession }) {
     }
   }, []);
 
-  // Cleanup audio when modal closes
+  const handleReset = () => {
+    synth.cancel();
+    setIsPlaying(false);
+    setFile(null);
+    setPages([]);
+    setCurrentPage(0);
+    setShowSettings(false);
+  };
+
   useEffect(() => {
-    if (!isOpen) {
-      synth.cancel();
-      setIsPlaying(false);
-    }
+    if (!isOpen) handleReset();
   }, [isOpen]);
 
   const handleFileUpload = async (e) => {
@@ -61,6 +68,7 @@ export default function SmartReader({ isOpen, onClose, authSession }) {
 
     const formData = new FormData();
     formData.append('file', uploadedFile);
+    formData.append('tone', readingTone); // Sent to backend for future Gemini integration
 
     try {
       const response = await fetch(`${import.meta.env.VITE_HEAVY_API_URL}/atomdev-api/parse-document`, {
@@ -95,7 +103,7 @@ export default function SmartReader({ isOpen, onClose, authSession }) {
   const readCurrentPage = () => {
     if (pages.length === 0) return;
     
-    synth.cancel(); // Stop anything currently playing
+    synth.cancel(); 
     
     const textToRead = pages[currentPage].text;
     const utterance = new SpeechSynthesisUtterance(textToRead);
@@ -107,17 +115,15 @@ export default function SmartReader({ isOpen, onClose, authSession }) {
       if (voice) utterance.voice = voice;
     }
 
-    // When the page finishes reading, automatically go to the next page!
     utterance.onend = () => {
       if (currentPage < pages.length - 1) {
         setCurrentPage(prev => prev + 1);
       } else {
-        setIsPlaying(false); // Book finished
+        setIsPlaying(false); 
       }
     };
 
     utterance.onerror = (e) => {
-      // Ignore abort errors (triggered by us calling cancel())
       if (e.error !== 'canceled') {
         console.error("SpeechSynthesis Error:", e);
         setIsPlaying(false);
@@ -143,18 +149,15 @@ export default function SmartReader({ isOpen, onClose, authSession }) {
     }
   };
 
-  // If the user manually changes the page while playing, read the new page instantly
   useEffect(() => {
     if (pages.length > 0 && isPlaying) {
       readCurrentPage();
     }
   }, [currentPage]);
 
-  // Restart speech if voice or speed changes while playing
   useEffect(() => {
     if (isPlaying) readCurrentPage();
   }, [selectedVoiceURI, playbackRate]);
-
 
   if (!isOpen) return null;
 
@@ -174,6 +177,11 @@ export default function SmartReader({ isOpen, onClose, authSession }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {pages.length > 0 && (
+              <button onClick={handleReset} className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors text-xs mr-2">
+                <Upload size={14} /> <span className="hidden sm:inline">Change File</span>
+              </button>
+            )}
             {pages.length > 0 && (
               <button onClick={() => setShowSettings(!showSettings)} className={`p-2.5 rounded-full transition-colors ${showSettings ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400' : 'text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200'}`}>
                 <Settings size={20} />
@@ -226,10 +234,25 @@ export default function SmartReader({ isOpen, onClose, authSession }) {
                 <Volume2 size={32} />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Upload a Document</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-                Upload a PDF, Word Document, or PowerPoint deck. We'll extract the text and our AI voice engine will read it aloud to you, page by page.
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+                Select a reading tone, then upload a PDF, Word, or PowerPoint file to have it read aloud.
               </p>
-              <label className="cursor-pointer group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white bg-indigo-600 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30">
+
+              <div className="mb-8 w-full text-left bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl">
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Wand2 size={14} className="text-indigo-500"/> Reading Tone & Style</label>
+                <select 
+                  value={readingTone} 
+                  onChange={(e) => setReadingTone(e.target.value)}
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option value="literal">Literal (Exact Document Text)</option>
+                  <option value="storyteller">Storyteller (Engaging & Dramatic)</option>
+                  <option value="lecturer">Lecturer (Academic & Detailed)</option>
+                  <option value="child">Explain to a 5-Year-Old</option>
+                </select>
+              </div>
+
+              <label className="cursor-pointer group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white bg-indigo-600 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 w-full sm:w-auto">
                 <Upload size={18} className="mr-2" /> Select File
                 <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx" className="hidden" onChange={handleFileUpload} />
               </label>
@@ -239,7 +262,9 @@ export default function SmartReader({ isOpen, onClose, authSession }) {
           {isLoading && (
             <div className="flex-1 flex flex-col items-center justify-center text-indigo-500">
               <Loader2 size={40} className="animate-spin mb-4" />
-              <p className="font-medium text-gray-600 dark:text-gray-300">Extracting text layout...</p>
+              <p className="font-medium text-gray-600 dark:text-gray-300">
+                {readingTone === 'literal' ? 'Extracting text layout...' : 'AI is rewriting and analyzing images...'}
+              </p>
             </div>
           )}
 
