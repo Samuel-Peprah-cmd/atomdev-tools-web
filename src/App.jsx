@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Paperclip, Send, Sparkles, Download, Loader2, CheckCircle2, AlertCircle, MessageSquare, Menu, Moon, Sun, StickyNote, User, Pencil, Trash2, Clock, MoreVertical, LogIn, LogOut, X, AlertTriangle, Heart } from 'lucide-react';
+import { Plus, Paperclip, Send, Sparkles, Download, Loader2, CheckCircle2, AlertCircle, MessageSquare, Menu, Moon, Sun, StickyNote, User, Pencil, Trash2, Clock, MoreVertical, LogIn, LogOut, X, AlertTriangle, Heart, BookOpen } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { submitJob, pollJobStatus } from './api/client';
 import ToolModal from './components/ToolModal';
@@ -7,6 +7,7 @@ import OwnerModal from './components/OwnerModal';
 import TopUpModal from './components/TopUpModal';
 import AdminDashboard from './components/AdminDashboard';
 import ContactModal from './components/ContactModal';
+import SmartReader from './components/SmartReader';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -94,6 +95,8 @@ export default function App() {
   const [credits, setCredits] = useState(null);
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [showDepletedModal, setShowDepletedModal] = useState(false);
+
+  const [isReaderOpen, setIsReaderOpen] = useState(false);
 
   // Hidden Admin Trigger State
   const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
@@ -553,8 +556,18 @@ export default function App() {
                 </div>
               </button>
 
+              <button onClick={() => setIsReaderOpen(true)} className="w-full flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 p-2.5 rounded-xl shadow-md mb-3 transition-colors text-left group">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <BookOpen size={16} className="text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-sm text-white truncate">Smart Reader</p>
+                  <p className="text-xs text-blue-100 truncate">Listen to documents</p>
+                </div>
+              </button>
+
               <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 text-center tracking-wide">
-                AtomDev Tools v0.8.8
+                AtomDev Tools v0.10.24
               </p>
             </div>
           </div>
@@ -868,6 +881,12 @@ export default function App() {
       <AdminDashboard 
         isOpen={isAdminDashboardOpen} 
         onClose={() => setIsAdminDashboardOpen(false)} 
+        authSession={authSession} 
+      />
+
+      <SmartReader 
+        isOpen={isReaderOpen} 
+        onClose={() => setIsReaderOpen(false)} 
         authSession={authSession} 
       />
 
